@@ -1,0 +1,46 @@
+:root {
+  /* Background */
+  --bg-dark: #1a1714;
+  --panel: #2a2520;
+  --panel-light: #352f29;
+
+  /* Borders */
+  --border: #4a4035;
+  --border-light: #5a5045;
+
+  /* Text */
+  --text: #e8ddd0;
+  --text-dim: #9a8e80;
+  --text-muted: #6a5e50;
+
+  /* Accent */
+  --accent: #c4793c;
+  --accent-bright: #e89850;
+
+  /* Stat colors */
+  --spirit: #5b8fb9;
+  --language: #7ab648;
+  --budget: #c9b458;
+  --skills: #b05baa;
+  --obedience: #c45b5b;
+  --rapport: #5bbab0;
+
+  /* Feedback */
+  --success: #6abf69;
+  --danger: #c45b5b;
+
+  /* Typography */
+  --font-pixel: 'Silkscreen', cursive;
+  --font-body: 'DM Sans', sans-serif;
+
+  /* Spacing */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 12px;
+  --space-lg: 16px;
+  --space-xl: 24px;
+
+  /* Layout */
+  --max-width: 720px;
+  --border-radius: 2px;
+}
