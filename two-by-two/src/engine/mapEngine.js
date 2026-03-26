@@ -56,6 +56,28 @@ export function getInteractionAt(map, x, y) {
   if (map.npcSpawns) {
     const npc = map.npcSpawns.find(n => n.x === x && n.y === y)
     if (npc) {
+      if (npc.type === 'investigator') {
+        return {
+          x: npc.x,
+          y: npc.y,
+          type: 'activity',
+          activity: 'visit_investigator',
+          investigatorId: npc.investigatorId,
+          label: 'Visit ' + npc.name,
+          prompt: 'Teach ' + npc.name + ' at their home?',
+        }
+      }
+      if (npc.type === 'shopper') {
+        return {
+          x: npc.x,
+          y: npc.y,
+          type: 'activity',
+          activity: 'street_contact',
+          label: 'Talk to Shopper',
+          prompt: 'Approach this person?',
+        }
+      }
+      // default: stranger or undefined
       return {
         x: npc.x,
         y: npc.y,
@@ -89,6 +111,7 @@ export function getAdjacentInteraction(map, playerX, playerY, direction) {
 /**
  * Calculate camera offset to center on player
  */
+// Camera offset that accepts fractional tile coordinates for smooth scrolling
 export function getCameraOffset(map, playerX, playerY) {
   // Target: center player in viewport
   let camX = playerX * SCALED_TILE - (CANVAS_WIDTH / 2) + (SCALED_TILE / 2)

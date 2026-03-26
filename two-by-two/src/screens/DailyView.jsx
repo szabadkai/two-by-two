@@ -26,6 +26,7 @@ export default function DailyView() {
   const endDay = useGameStore((s) => s.endDay)
   const acceptMandatory = useGameStore((s) => s.acceptMandatory)
   const refuseMandatory = useGameStore((s) => s.refuseMandatory)
+  const setVisitTarget = useGameStore((s) => s.setVisitTarget)
 
   const deltas = lastDayResult?.statDeltas || {}
 
@@ -95,6 +96,11 @@ export default function DailyView() {
     const activityId = pendingInteraction.activity
     const hasMinigame = ACTIVITY_MINIGAME_MAP[activityId]
 
+    // Set visit target if this is a visit_investigator activity
+    if (activityId === 'visit_investigator' && pendingInteraction.investigatorId) {
+      setVisitTarget(pendingInteraction.investigatorId)
+    }
+
     if (hasMinigame) {
       // Launch minigame
       setActiveMinigame({ activityId, slot: getSlotToFill() })
@@ -107,7 +113,7 @@ export default function DailyView() {
       advanceSlot()
       setPendingInteraction(null)
     }
-  }, [pendingInteraction, getSlotToFill, advanceSlot, setActivity, setMinigameScore])
+  }, [pendingInteraction, getSlotToFill, advanceSlot, setActivity, setMinigameScore, setVisitTarget])
 
   // Minigame completed
   const handleMinigameComplete = useCallback((score) => {
@@ -261,8 +267,12 @@ export default function DailyView() {
         {/* Sidebar */}
         <div style={styles.sidebar}>
           <CompanionCard companion={companion} />
-          {investigators.map((inv) => (
-            <InvestigatorCard key={inv.id} investigator={inv} />
+          {[...investigators].sort((a, b) => {
+            if (a.isActive && !b.isActive) return -1
+            if (!a.isActive && b.isActive) return 1
+            return 0
+          }).map((inv) => (
+            <InvestigatorCard key={inv.id} investigator={inv} onClick={() => {}} />
           ))}
         </div>
       </div>
@@ -411,6 +421,9 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
     gap: '6px',
+    maxHeight: 'calc(100vh - 120px)',
+    overflowY: 'auto',
+    paddingRight: '4px',
   },
   notifications: {
     display: 'flex',

@@ -180,8 +180,12 @@ export default function PDayView() {
 
         <div style={styles.sidebar}>
           <CompanionCard companion={companion} />
-          {investigators.map((inv) => (
-            <InvestigatorCard key={inv.id} investigator={inv} />
+          {[...investigators].sort((a, b) => {
+            if (a.isActive && !b.isActive) return -1
+            if (!a.isActive && b.isActive) return 1
+            return 0
+          }).map((inv) => (
+            <InvestigatorCard key={inv.id} investigator={inv} onClick={() => {}} />
           ))}
         </div>
       </div>
@@ -237,6 +241,7 @@ const styles = {
   hintText: { fontSize: '8px', color: 'var(--text-dim)', letterSpacing: '1px' },
   sidebar: {
     width: '180px', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '6px',
+    maxHeight: 'calc(100vh - 120px)', overflowY: 'auto', paddingRight: '4px',
   },
   footer: {
     display: 'flex', justifyContent: 'space-between', alignItems: 'center',

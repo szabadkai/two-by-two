@@ -9,10 +9,20 @@ export function getInvestigatorForTeaching(investigators) {
   )
 }
 
-export function advanceInvestigator(state) {
-  const investigator = getInvestigatorForTeaching(state.investigators)
+export function advanceInvestigator(state, targetId = null) {
+  let investigator
+  if (targetId) {
+    investigator = state.investigators.find((i) => i.id === targetId && i.isActive && i.stage < 7) || null
+  } else {
+    investigator = getInvestigatorForTeaching(state.investigators)
+  }
   if (!investigator) {
     return { investigator: null, result: 'no_active', text: 'No active investigators to teach.' }
+  }
+
+  // Apply warmth bonus for targeted visit (cap at 10)
+  if (targetId) {
+    investigator = { ...investigator, warmth: Math.min(10, investigator.warmth + 1) }
   }
 
   const { skills, language } = state.stats

@@ -13,6 +13,7 @@ export default function WeeklySummary() {
   const weekLog = useGameStore((s) => s.weekLog)
   const baptisms = useGameStore((s) => s.baptisms)
   const endWeek = useGameStore((s) => s.endWeek)
+  const saveGame = useGameStore((s) => s.saveGame)
 
   const statDeltas = {}
   for (const stat of ['language', 'spirit', 'skills', 'obedience', 'budget']) {
@@ -200,6 +201,12 @@ export default function WeeklySummary() {
           </div>
         )}
 
+        <button
+          onClick={saveGame}
+          style={styles.saveBtn}
+        >
+          <span className="pixel-font">Save Mission</span>
+        </button>
         <button className="primary" onClick={endWeek} style={styles.continueBtn}>
           {isTransferWeek(week)
             ? 'Continue to Transfer'
@@ -365,6 +372,16 @@ const styles = {
   baptismLabel: {
     fontSize: '12px',
     color: 'var(--success)',
+  },
+  saveBtn: {
+    alignSelf: 'center',
+    padding: '8px 24px',
+    fontSize: '10px',
+    background: 'var(--panel-light)',
+    border: '1px solid var(--border)',
+    color: 'var(--accent)',
+    cursor: 'pointer',
+    borderRadius: '2px',
   },
   continueBtn: {
     alignSelf: 'center',

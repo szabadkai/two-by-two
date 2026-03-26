@@ -1,7 +1,17 @@
+import { useState } from 'react'
 import { INVESTIGATOR_STAGES } from '../data/investigators'
 
-export default function InvestigatorCard({ investigator }) {
+export default function InvestigatorCard({ investigator, onClick }) {
   const { name, personality, stage, warmth, isActive, description } = investigator
+  const [hovered, setHovered] = useState(false)
+  const [expanded, setExpanded] = useState(false)
+
+  const handleClick = () => {
+    if (onClick) onClick(investigator)
+    if (isActive && stage < 7) {
+      setExpanded((prev) => !prev)
+    }
+  }
 
   return (
     <div
@@ -9,7 +19,12 @@ export default function InvestigatorCard({ investigator }) {
       style={{
         ...styles.container,
         opacity: isActive ? 1 : 0.4,
+        cursor: 'pointer',
+        border: hovered ? '1px solid var(--accent)' : '1px solid transparent',
       }}
+      onClick={handleClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
     >
       <div style={styles.header}>
         <div style={styles.info}>
@@ -53,11 +68,20 @@ export default function InvestigatorCard({ investigator }) {
               ...styles.heart,
               color: i < warmth ? 'var(--danger)' : 'var(--panel-light)',
             }}>
-              {i < warmth ? '♥' : '♡'}
+              {i < warmth ? '\u2665' : '\u2661'}
             </span>
           ))}
         </div>
       </div>
+
+      {/* Expanded info */}
+      {expanded && isActive && stage < 7 && (
+        <div style={styles.expandedInfo}>
+          {description && <p style={styles.description}>{description}</p>}
+          <p style={styles.stageInfo}>Stage: {INVESTIGATOR_STAGES[stage]}</p>
+          <p style={styles.hint}>Find them on the street to teach</p>
+        </div>
+      )}
     </div>
   )
 }
@@ -131,5 +155,29 @@ const styles = {
   heart: {
     fontSize: '10px',
     lineHeight: 1,
+  },
+  expandedInfo: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '3px',
+    paddingTop: '4px',
+    borderTop: '1px solid var(--border)',
+  },
+  description: {
+    fontSize: '10px',
+    color: 'var(--text-dim)',
+    margin: 0,
+  },
+  stageInfo: {
+    fontSize: '9px',
+    color: 'var(--text-muted)',
+    fontFamily: 'var(--font-pixel)',
+    margin: 0,
+  },
+  hint: {
+    fontSize: '9px',
+    color: 'var(--accent)',
+    fontStyle: 'italic',
+    margin: 0,
   },
 }

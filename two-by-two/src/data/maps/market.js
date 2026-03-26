@@ -38,6 +38,13 @@ export const market = {
     [ 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0],
   ],
 
+  npcSpawns: [
+    { x: 3, y: 3, type: 'shopper' },
+    { x: 9, y: 4, type: 'shopper' },
+    { x: 6, y: 7, type: 'shopper' },
+    { x: 12, y: 7, type: 'shopper' },
+  ],
+
   interactions: [
     // Door back to street
     {

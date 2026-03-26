@@ -16,6 +16,7 @@ import {
   rollMandatoryActivity,
 } from '../engine/consequenceEngine'
 import { isTransferWeek } from '../engine/transferEngine'
+import { exportSave, importSave, saveToLocalStorage, loadFromLocalStorage } from '../utils/saveLoad'
 
 const createInitialState = () => ({
   screen: 'title',
@@ -65,6 +66,9 @@ const createInitialState = () => ({
   // Mandatory activity for today
   mandatoryActivity: null,
 
+  // Visit investigator targeting
+  visitTarget: null,
+
   // Day resolution results (for UI animation)
   lastDayResult: null,
 
@@ -102,6 +106,7 @@ export const useGameStore = create((set, get) => ({
     if (mandatoryActivity) {
       set({ mandatoryActivity })
     }
+    setTimeout(() => get().autoSave(), 0)
   },
 
   setActivity: (slot, activityId) => {
@@ -115,6 +120,8 @@ export const useGameStore = create((set, get) => ({
       minigameScores: { ...s.minigameScores, [slot]: score },
     }))
   },
+
+  setVisitTarget: (id) => set({ visitTarget: id }),
 
   acceptMandatory: () => {
     set((s) => ({
@@ -157,9 +164,15 @@ export const useGameStore = create((set, get) => ({
 
     let pendingObjection = null
 
+    // Check if any scheduled activity was visit_investigator
+    const hasVisitInvestigator = Object.values(state.schedule).some(
+      (a) => a === 'visit_investigator'
+    )
+
     for (const special of result.specialResults) {
       if (special === 'advanceInvestigator') {
-        const advancement = advanceInvestigator({ ...state, stats: result.newStats })
+        const targetId = hasVisitInvestigator ? state.visitTarget : null
+        const advancement = advanceInvestigator({ ...state, stats: result.newStats }, targetId)
         if (advancement.investigator) {
           investigators = investigators.map((inv) =>
             inv.id === advancement.investigator.id ? advancement.investigator : inv
@@ -227,6 +240,7 @@ export const useGameStore = create((set, get) => ({
       schedule: { morning: null, afternoon: null, evening: null },
       minigameScores: { morning: null, afternoon: null, evening: null },
       mandatoryActivity: null,
+      visitTarget: null,
       weekLog: {
         ...s.weekLog,
         events: result.triggeredEvent
@@ -240,6 +254,8 @@ export const useGameStore = create((set, get) => ({
     if (!result.triggeredEvent && !pendingObjection) {
       get().advanceDay()
     }
+
+    setTimeout(() => get().autoSave(), 0)
   },
 
   resolveEventChoice: (choiceIndex) => {
@@ -324,6 +340,7 @@ export const useGameStore = create((set, get) => ({
       const mandatoryActivity = rollMandatoryActivity(state)
       set({ day: nextDay, mandatoryActivity })
     }
+    setTimeout(() => get().autoSave(), 0)
   },
 
   endWeek: () => {
@@ -401,8 +418,7 @@ export const useGameStore = create((set, get) => ({
     const nextWeek = state.week + 1
 
     if (nextWeek > TOTAL_WEEKS) {
-      // Game over — for now just go back to title
-      set({ screen: 'title' })
+      set({ screen: 'endgame' })
       return
     }
 
@@ -444,6 +460,8 @@ export const useGameStore = create((set, get) => ({
         mandatoryActivity: rollMandatoryActivity(state),
       })
     }
+
+    setTimeout(() => get().autoSave(), 0)
   },
 
   completeTransfer: ({ newCompanion, interviewEffects, promotion }) => {
@@ -472,6 +490,41 @@ export const useGameStore = create((set, get) => ({
       screen: 'game',
       mandatoryActivity: rollMandatoryActivity(state),
     })
+
+    setTimeout(() => get().autoSave(), 0)
+  },
+
+  saveGame: () => {
+    const state = get()
+    const json = exportSave(state)
+    const blob = new Blob([json], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `two-by-two-week-${state.week}.json`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  },
+
+  loadGame: (jsonString) => {
+    const loaded = importSave(jsonString)
+    set({ ...loaded, screen: 'game' })
+  },
+
+  autoSave: () => {
+    const state = get()
+    if (state.screen !== 'title') {
+      saveToLocalStorage(state)
+    }
+  },
+
+  loadAutoSave: () => {
+    const loaded = loadFromLocalStorage()
+    if (loaded) {
+      set({ ...loaded, screen: 'game' })
+    }
   },
 
   goToScreen: (screen) => set({ screen }),

@@ -1,6 +1,7 @@
-import { useRef, useEffect, useCallback, useState } from 'react'
+import { useRef, useEffect, useCallback, useState, useMemo } from 'react'
 import { useGameStore } from '../store/gameStore'
 import { MAPS, STARTING_MAP } from '../data/maps/index'
+import { getEnhancedMap } from '../engine/mapEnhancer'
 import { CANVAS_WIDTH, CANVAS_HEIGHT, SCALED_TILE } from '../data/tiles'
 import {
   renderMap,
@@ -13,6 +14,7 @@ import {
 } from '../engine/mapEngine'
 
 const MOVE_COOLDOWN = 150 // ms between moves (tile-based movement)
+const LERP_SPEED = 0.18 // visual interpolation speed (0-1, higher = snappier)
 
 export default function GameCanvas({ timeOfDay, onInteraction }) {
   const canvasRef = useRef(null)
@@ -36,10 +38,17 @@ export default function GameCanvas({ timeOfDay, onInteraction }) {
   const [walkFrame, setWalkFrame] = useState(0)
   const [activePrompt, setActivePrompt] = useState(null)
 
+  // Smooth visual positions (fractional tile coords for interpolation)
+  const visualPlayerRef = useRef({ x: MAPS[STARTING_MAP].playerStart.x, y: MAPS[STARTING_MAP].playerStart.y })
+  const visualCompanionRef = useRef({ x: MAPS[STARTING_MAP].companionStart.x, y: MAPS[STARTING_MAP].companionStart.y })
+
   // Companion movement history (for following)
   const companionTrailRef = useRef([])
 
-  const map = MAPS[mapId]
+  const investigators = useGameStore((s) => s.investigators)
+  const enhancedMap = useMemo(() => getEnhancedMap(MAPS[mapId], investigators), [mapId, investigators])
+  const enhancedMapRef = useRef(enhancedMap)
+  enhancedMapRef.current = enhancedMap
 
   // Handle map transition
   const changeMap = useCallback((targetMapId, targetPos) => {
@@ -52,6 +61,9 @@ export default function GameCanvas({ timeOfDay, onInteraction }) {
       x: targetPos.x - 1,
       y: targetPos.y,
     })
+    // Snap visual positions on map change (no interpolation)
+    visualPlayerRef.current = { x: targetPos.x, y: targetPos.y }
+    visualCompanionRef.current = { x: targetPos.x - 1, y: targetPos.y }
     companionTrailRef.current = []
     setActivePrompt(null)
   }, [])
@@ -113,7 +125,7 @@ export default function GameCanvas({ timeOfDay, onInteraction }) {
     const gameLoop = (timestamp) => {
       if (!running) return
 
-      const currentMap = MAPS[mapId]
+      const currentMap = enhancedMapRef.current
       if (!currentMap) { animFrameRef.current = requestAnimationFrame(gameLoop); return }
 
       const keys = keysRef.current
@@ -195,24 +207,41 @@ export default function GameCanvas({ timeOfDay, onInteraction }) {
       const nearbyInteraction = getAdjacentInteraction(currentMap, playerPos.x, playerPos.y, direction)
       setActivePrompt(nearbyInteraction)
 
+      // --- SMOOTH VISUAL INTERPOLATION ---
+      const vp = visualPlayerRef.current
+      const vc = visualCompanionRef.current
+      vp.x += (playerPos.x - vp.x) * LERP_SPEED
+      vp.y += (playerPos.y - vp.y) * LERP_SPEED
+      vc.x += (companionPos.x - vc.x) * LERP_SPEED
+      vc.y += (companionPos.y - vc.y) * LERP_SPEED
+      // Snap if very close (avoid endless micro-movement)
+      if (Math.abs(playerPos.x - vp.x) < 0.01) vp.x = playerPos.x
+      if (Math.abs(playerPos.y - vp.y) < 0.01) vp.y = playerPos.y
+      if (Math.abs(companionPos.x - vc.x) < 0.01) vc.x = companionPos.x
+      if (Math.abs(companionPos.y - vc.y) < 0.01) vc.y = companionPos.y
+
       // --- RENDER ---
-      const camera = getCameraOffset(currentMap, playerPos.x, playerPos.y)
+      const camera = getCameraOffset(currentMap, vp.x, vp.y)
 
       // Draw map
       renderMap(ctx, currentMap, camera, timeOfDay)
 
       // Draw companion (behind player)
-      renderCharacter(ctx, camera, companionPos.x, companionPos.y, companionDir, 'companion', walkFrame)
+      renderCharacter(ctx, camera, vc.x, vc.y, companionDir, 'companion', walkFrame)
 
       // Draw NPCs (from map npcSpawns)
       if (currentMap.npcSpawns) {
         currentMap.npcSpawns.forEach((npc, i) => {
-          renderCharacter(ctx, camera, npc.x, npc.y, 'down', i % 2 === 0 ? 'npc_male' : 'npc_female', 0)
+          if (npc.type === 'investigator') {
+            renderCharacter(ctx, camera, npc.x, npc.y, 'down', 'investigator', 0)
+          } else {
+            renderCharacter(ctx, camera, npc.x, npc.y, 'down', i % 2 === 0 ? 'npc_male' : 'npc_female', 0)
+          }
         })
       }
 
       // Draw player (on top)
-      renderCharacter(ctx, camera, playerPos.x, playerPos.y, direction, 'player', walkFrame)
+      renderCharacter(ctx, camera, vp.x, vp.y, direction, 'player', walkFrame)
 
       // Draw interaction prompt
       if (nearbyInteraction) {
@@ -243,6 +272,8 @@ export default function GameCanvas({ timeOfDay, onInteraction }) {
       setMapId(newMapId)
       setPlayerPos(newMap.playerStart)
       setCompanionPos(newMap.companionStart)
+      visualPlayerRef.current = { ...newMap.playerStart }
+      visualCompanionRef.current = { ...newMap.companionStart }
       companionTrailRef.current = []
     }
   }, [])

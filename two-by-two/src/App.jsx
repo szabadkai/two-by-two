@@ -6,6 +6,7 @@ import PDayView from './screens/PDayView'
 import WeeklySummary from './screens/WeeklySummary'
 import TransferScreen from './screens/TransferScreen'
 import SentHomeScreen from './screens/SentHomeScreen'
+import EndgameScreen from './screens/EndgameScreen'
 import EventModal from './components/EventModal'
 import ObjectionModal from './components/ObjectionModal'
 
@@ -24,13 +25,16 @@ function App() {
       case 'summary': return <WeeklySummary />
       case 'transfer': return <TransferScreen />
       case 'sent_home': return <SentHomeScreen />
+      case 'endgame': return <EndgameScreen />
       default: return <TitleScreen />
     }
   }
 
   return (
     <div className="game-container">
-      {renderScreen()}
+      <div className="screen-transition" key={screen}>
+        {renderScreen()}
+      </div>
       {pendingEvent && <EventModal />}
       {pendingObjection && (
         <ObjectionModal

@@ -15,6 +15,7 @@ export default function TransferScreen() {
   const week = useGameStore((s) => s.week)
   const leadership = useGameStore((s) => s.leadership)
   const completeTransfer = useGameStore((s) => s.completeTransfer)
+  const saveGame = useGameStore((s) => s.saveGame)
 
   const [phase, setPhase] = useState('farewell') // farewell | interview | reveal
   const [transfer] = useState(() => generateTransfer(state))
@@ -221,6 +222,12 @@ export default function TransferScreen() {
               </div>
             )}
 
+            <button
+              onClick={saveGame}
+              style={styles.saveBtn}
+            >
+              <span className="pixel-font">Save Progress</span>
+            </button>
             <button className="primary" onClick={handleContinue} style={styles.continueBtn}>
               <span className="pixel-font">Begin Transfer</span>
             </button>
@@ -506,6 +513,15 @@ const styles = {
     color: 'var(--accent)',
     textTransform: 'uppercase',
     letterSpacing: '1px',
+  },
+  saveBtn: {
+    padding: '8px 24px',
+    fontSize: '10px',
+    background: 'var(--panel-light)',
+    border: '1px solid var(--border)',
+    color: 'var(--accent)',
+    cursor: 'pointer',
+    borderRadius: '2px',
   },
   continueBtn: {
     padding: '10px 32px',

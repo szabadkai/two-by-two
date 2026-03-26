@@ -74,6 +74,13 @@ export const ACTIVITIES = {
     description: 'A crisp new white shirt. Looking sharp, Elder. The mission president would approve.',
     effects: { budget: [-2000, -1500], obedience: [1, 2] },
   },
+  visit_investigator: {
+    id: 'visit_investigator',
+    label: 'Visit Investigator',
+    description: 'Visit your investigator at their home for a personal lesson. The personal touch makes a difference.',
+    effects: { skills: [1, 2], language: [0, 1], spirit: [0, 1] },
+    special: 'advanceInvestigator',
+  },
 }
 
 export const PDAY_ACTIVITIES = {
