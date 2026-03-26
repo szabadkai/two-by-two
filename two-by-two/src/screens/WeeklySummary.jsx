@@ -1,12 +1,15 @@
 import { useGameStore } from '../store/gameStore'
 import { INVESTIGATOR_STAGES } from '../data/investigators'
 import { getCompanionMood } from '../engine/companionEngine'
+import { WEEKS_PER_TRANSFER } from '../data/constants'
+import { isTransferWeek } from '../engine/transferEngine'
 
 export default function WeeklySummary() {
   const stats = useGameStore((s) => s.stats)
   const companion = useGameStore((s) => s.companion)
   const investigators = useGameStore((s) => s.investigators)
   const week = useGameStore((s) => s.week)
+  const warnings = useGameStore((s) => s.warnings)
   const weekLog = useGameStore((s) => s.weekLog)
   const baptisms = useGameStore((s) => s.baptisms)
   const endWeek = useGameStore((s) => s.endWeek)
@@ -19,10 +22,65 @@ export default function WeeklySummary() {
 
   const mood = getCompanionMood(companion.rapport)
 
+  // Transfer countdown
+  const weeksUntilTransfer = WEEKS_PER_TRANSFER - ((week - 1) % WEEKS_PER_TRANSFER)
+
+  // Find worst and best stat changes
+  const statEntries = Object.entries(statDeltas).filter(([s]) => s !== 'budget')
+  const bestStat = statEntries.reduce((a, b) => (b[1] > a[1] ? b : a), ['', -Infinity])
+  const worstStat = statEntries.reduce((a, b) => (b[1] < a[1] ? b : a), ['', Infinity])
+
   return (
     <div style={styles.container}>
       <div className="panel" style={styles.panel}>
         <h2 style={styles.title}>Week {week} Summary</h2>
+
+        {/* Transfer countdown */}
+        <div style={styles.transferCountdown}>
+          <span className="pixel-font" style={styles.transferText}>
+            {weeksUntilTransfer === WEEKS_PER_TRANSFER
+              ? 'TRANSFER WEEK'
+              : `${weeksUntilTransfer} week${weeksUntilTransfer !== 1 ? 's' : ''} until transfer`}
+          </span>
+        </div>
+
+        {/* Warnings */}
+        {warnings > 0 && (
+          <div style={styles.warningBox}>
+            <span className="pixel-font" style={styles.warningCount}>
+              WARNINGS: {warnings}/3
+            </span>
+            {warnings >= 2 && (
+              <span style={styles.warningSubtext}>
+                One more and you'll be sent home.
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Highlights */}
+        <div style={styles.section}>
+          <h3 style={styles.sectionTitle}>Highlights</h3>
+          {bestStat[1] > 0 && (
+            <p style={styles.highlightGood}>
+              Best: <span className="pixel-font" style={{ color: `var(--${bestStat[0]})` }}>
+                {bestStat[0]}
+              </span> (+{bestStat[1]})
+            </p>
+          )}
+          {worstStat[1] < 0 && (
+            <p style={styles.highlightBad}>
+              Worst: <span className="pixel-font" style={{ color: `var(--${worstStat[0]})` }}>
+                {worstStat[0]}
+              </span> ({worstStat[1]})
+            </p>
+          )}
+          {stats.spirit < 30 && (
+            <p style={styles.highlightBad}>
+              You're feeling trunky. Everything is harder.
+            </p>
+          )}
+        </div>
 
         {/* Stat Changes */}
         <div style={styles.section}>
@@ -122,8 +180,13 @@ export default function WeeklySummary() {
         {/* Notifications */}
         {weekLog.notifications.length > 0 && (
           <div style={styles.section}>
+            <h3 style={styles.sectionTitle}>Notices</h3>
             {weekLog.notifications.map((note, i) => (
-              <p key={i} style={styles.warningText}>{note}</p>
+              <p key={i} style={{
+                ...styles.warningText,
+                color: note.includes('WARNING') ? 'var(--danger)' : 'var(--text-muted)',
+                fontFamily: note.includes('WARNING') ? 'var(--font-pixel)' : 'inherit',
+              }}>{note}</p>
             ))}
           </div>
         )}
@@ -138,7 +201,9 @@ export default function WeeklySummary() {
         )}
 
         <button className="primary" onClick={endWeek} style={styles.continueBtn}>
-          Continue to Week {week + 1}
+          {isTransferWeek(week)
+            ? 'Continue to Transfer'
+            : `Continue to Week ${week + 1}`}
         </button>
       </div>
     </div>
@@ -164,6 +229,36 @@ const styles = {
     color: 'var(--accent-bright)',
     textAlign: 'center',
   },
+  transferCountdown: {
+    textAlign: 'center',
+    padding: '6px',
+    background: 'var(--panel-light)',
+    borderRadius: '2px',
+  },
+  transferText: {
+    fontSize: '10px',
+    color: 'var(--accent)',
+    textTransform: 'uppercase',
+  },
+  warningBox: {
+    padding: '8px 12px',
+    background: 'rgba(200, 60, 60, 0.1)',
+    border: '1px solid var(--danger)',
+    borderRadius: '2px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '4px',
+    textAlign: 'center',
+  },
+  warningCount: {
+    fontSize: '12px',
+    color: 'var(--danger)',
+  },
+  warningSubtext: {
+    fontSize: '10px',
+    color: 'var(--danger)',
+    opacity: 0.8,
+  },
   section: {
     display: 'flex',
     flexDirection: 'column',
@@ -176,6 +271,14 @@ const styles = {
     color: 'var(--text-dim)',
     textTransform: 'uppercase',
     letterSpacing: '1px',
+  },
+  highlightGood: {
+    fontSize: '11px',
+    color: 'var(--success)',
+  },
+  highlightBad: {
+    fontSize: '11px',
+    color: 'var(--danger)',
   },
   statGrid: {
     display: 'flex',
@@ -253,8 +356,7 @@ const styles = {
   },
   warningText: {
     fontSize: '11px',
-    color: 'var(--danger)',
-    fontFamily: 'var(--font-pixel)',
+    padding: '2px 0',
   },
   baptismCount: {
     textAlign: 'center',

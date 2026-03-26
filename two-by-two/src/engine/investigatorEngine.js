@@ -1,4 +1,5 @@
 import { INVESTIGATOR_BASE_PROGRESSION, WARMTH_DECAY_PER_WEEK } from '../data/constants'
+import { STAGE_OBJECTIONS } from '../data/investigatorTemplates'
 
 export function getInvestigatorForTeaching(investigators) {
   const active = investigators.filter((i) => i.isActive && i.stage < 7)
@@ -29,12 +30,16 @@ export function advanceInvestigator(state) {
     const newStage = investigator.stage + 1
     const baptized = newStage >= 7
 
+    // Check if the new stage triggers an objection
+    const objection = checkStageObjection(newStage, investigator)
+
     return {
       investigator: { ...investigator, stage: newStage },
       result: baptized ? 'baptized' : 'advanced',
       text: baptized
         ? `${investigator.name} was baptized! A golden day on the Danube.`
         : `${investigator.name} progressed to the next stage!`,
+      objection, // may be null
     }
   }
 
@@ -42,6 +47,46 @@ export function advanceInvestigator(state) {
     investigator: { ...investigator, warmth: Math.max(0, investigator.warmth - 1) },
     result: 'failed',
     text: `${investigator.name} wasn't ready to move forward. They seem a little less engaged.`,
+    objection: null,
+  }
+}
+
+/**
+ * Check if advancing to this stage triggers an objection event.
+ * Objections happen at stages 2, 4, and 6.
+ */
+export function checkStageObjection(newStage, investigator) {
+  const stageData = STAGE_OBJECTIONS[newStage]
+  if (!stageData) return null
+
+  // 70% chance of objection at trigger stages
+  if (Math.random() > 0.7) return null
+
+  const scenario = stageData.scenarios[Math.floor(Math.random() * stageData.scenarios.length)]
+  return {
+    trigger: stageData.trigger,
+    text: scenario.text,
+    options: scenario.options,
+    investigatorId: investigator.id,
+  }
+}
+
+/**
+ * Apply objection resolution to an investigator.
+ */
+export function resolveObjection(investigator, effect) {
+  const newWarmth = Math.max(0, Math.min(10, investigator.warmth + (effect.warmthDelta || 0)))
+
+  // If advance is false, roll back the stage
+  let newStage = investigator.stage
+  if (!effect.advance) {
+    newStage = Math.max(0, investigator.stage - 1)
+  }
+
+  return {
+    ...investigator,
+    warmth: newWarmth,
+    stage: newStage,
   }
 }
 

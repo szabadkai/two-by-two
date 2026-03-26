@@ -32,7 +32,7 @@ export const TIME_SLOT_LABELS = { morning: 'Morning', afternoon: 'Afternoon', ev
 
 export const EVENT_CHANCE = 0.3
 export const INVESTIGATOR_BASE_PROGRESSION = 0.3
-export const WARMTH_DECAY_PER_WEEK = 1
+export const WARMTH_DECAY_PER_WEEK = 2
 export const RAPPORT_EFFECT_SCALE = 0.1
 
 export const TRUNKY_THRESHOLD = 30
@@ -43,3 +43,32 @@ export const ON_FIRE_MULTIPLIER = 1.15
 export const WEEKS_PER_TRANSFER = 6
 
 export const MONTHLY_STIPEND = 45000
+
+// --- Difficulty & Consequences ---
+
+// Daily spirit drain (homesickness)
+export const DAILY_SPIRIT_DRAIN = 3
+
+// Language decay per week if no language activity was done
+export const LANGUAGE_DECAY_PER_WEEK = 1
+
+// Weekly mandatory expenses
+export const WEEKLY_FOOD_COST = 3000
+export const WEEKLY_TRANSIT_COST = 2000
+
+// Warnings & failure
+export const MAX_WARNINGS = 3
+export const SPIRIT_CRISIS_THRESHOLD = 0
+export const COMPANION_REPORT_OBEDIENCE_THRESHOLD = 40
+export const COMPANION_REPORT_RAPPORT_THRESHOLD = 4
+export const COMPANION_REPORT_CHANCE = 0.3
+export const OBEDIENCE_REPORT_PENALTY = 20
+
+// Mandatory activity trigger thresholds
+export const MANDATORY_ACTIVITY_CHANCE = 0.25  // 25% chance per day of a mandatory task
+export const COMPANION_DEMAND_RAPPORT_THRESHOLD = 3
+export const COMPANION_DEMAND_RAPPORT_PENALTY = 3
+
+// Member visit request expiry
+export const MEMBER_REQUEST_CHANCE = 0.15
+export const MEMBER_REQUEST_SPIRIT_PENALTY = 3

@@ -1,20 +1,29 @@
 import { useGameStore } from './store/gameStore'
 import TitleScreen from './screens/TitleScreen'
+import MTCScreen from './screens/MTCScreen'
 import DailyView from './screens/DailyView'
 import PDayView from './screens/PDayView'
 import WeeklySummary from './screens/WeeklySummary'
+import TransferScreen from './screens/TransferScreen'
+import SentHomeScreen from './screens/SentHomeScreen'
 import EventModal from './components/EventModal'
+import ObjectionModal from './components/ObjectionModal'
 
 function App() {
   const screen = useGameStore((s) => s.screen)
   const pendingEvent = useGameStore((s) => s.pendingEvent)
+  const pendingObjection = useGameStore((s) => s.pendingObjection)
+  const resolveObjectionChoice = useGameStore((s) => s.resolveObjectionChoice)
 
   const renderScreen = () => {
     switch (screen) {
       case 'title': return <TitleScreen />
+      case 'mtc': return <MTCScreen />
       case 'game': return <DailyView />
       case 'pday': return <PDayView />
       case 'summary': return <WeeklySummary />
+      case 'transfer': return <TransferScreen />
+      case 'sent_home': return <SentHomeScreen />
       default: return <TitleScreen />
     }
   }
@@ -23,6 +32,13 @@ function App() {
     <div className="game-container">
       {renderScreen()}
       {pendingEvent && <EventModal />}
+      {pendingObjection && (
+        <ObjectionModal
+          investigator={pendingObjection.investigator}
+          objection={pendingObjection}
+          onResolve={resolveObjectionChoice}
+        />
+      )}
     </div>
   )
 }

@@ -1,6 +1,7 @@
 import { useGameStore } from '../store/gameStore'
 
 export default function TitleScreen() {
+  const startMTC = useGameStore((s) => s.startMTC)
   const startGame = useGameStore((s) => s.startGame)
 
   return (
@@ -16,7 +17,7 @@ export default function TitleScreen() {
         <button
           className="primary"
           style={styles.startBtn}
-          onClick={startGame}
+          onClick={startMTC}
         >
           New Mission
         </button>

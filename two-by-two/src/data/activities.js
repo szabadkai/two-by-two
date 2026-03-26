@@ -50,6 +50,30 @@ export const ACTIVITIES = {
     effects: { skills: [0, 1], language: [0, 0], spirit: [0, 1] },
     special: 'englishClassContact',
   },
+  buy_food: {
+    id: 'buy_food',
+    label: 'Buy Groceries',
+    description: 'Fresh peppers, kolbász, kenyér, and a túró rudi for the walk home. The basics of missionary survival.',
+    effects: { budget: [-2000, -1000], spirit: [0, 1] },
+  },
+  buy_peanut_butter: {
+    id: 'buy_peanut_butter',
+    label: 'Buy Peanut Butter',
+    description: 'Imported American peanut butter. Costs more than your weekly food budget, but it tastes like home.',
+    effects: { budget: [-3000, -3000], spirit: [3, 3] },
+  },
+  buy_books: {
+    id: 'buy_books',
+    label: 'Buy Books',
+    description: 'A Hungarian phrasebook with useful phrases like "Hol van a templom?" and a dual-language Book of Mormon.',
+    effects: { budget: [-1500, -800], language: [1, 2], skills: [0, 1] },
+  },
+  buy_clothes: {
+    id: 'buy_clothes',
+    label: 'Buy Clothes',
+    description: 'A crisp new white shirt. Looking sharp, Elder. The mission president would approve.',
+    effects: { budget: [-2000, -1500], obedience: [1, 2] },
+  },
 }
 
 export const PDAY_ACTIVITIES = {

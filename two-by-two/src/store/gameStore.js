@@ -1,11 +1,21 @@
 import { create } from 'zustand'
-import { INITIAL_STATS, TOTAL_WEEKS, DAY_NAMES } from '../data/constants'
+import { INITIAL_STATS, TOTAL_WEEKS, DAY_NAMES, WEEKS_PER_TRANSFER, MONTHLY_STIPEND } from '../data/constants'
 import { getStartingCompanion } from '../data/companions'
 import { STARTING_INVESTIGATORS } from '../data/investigators'
 import { resolveDay } from '../engine/resolveDay'
 import { resolveEvent as resolveEventEngine } from '../engine/resolveEvent'
-import { advanceInvestigator, weeklyInvestigatorDecay } from '../engine/investigatorEngine'
+import { advanceInvestigator, weeklyInvestigatorDecay, resolveObjection } from '../engine/investigatorEngine'
+import { checkNewInvestigator, resetNamePool } from '../engine/investigatorGenerator'
 import { getCompanionQuote, clampRapport } from '../engine/companionEngine'
+import {
+  checkCompanionReport,
+  checkBudgetDebt,
+  checkSentHome,
+  applyWeeklyExpenses,
+  applyLanguageDecay,
+  rollMandatoryActivity,
+} from '../engine/consequenceEngine'
+import { isTransferWeek } from '../engine/transferEngine'
 
 const createInitialState = () => ({
   screen: 'title',
@@ -26,9 +36,11 @@ const createInitialState = () => ({
 
   // Schedule
   schedule: { morning: null, afternoon: null, evening: null },
+  minigameScores: { morning: null, afternoon: null, evening: null },
 
   // Events
   pendingEvent: null,
+  pendingObjection: null,
   eventLog: [],
 
   // Scoring
@@ -38,6 +50,20 @@ const createInitialState = () => ({
   // Flags
   laundryWeeksSkipped: 0,
   catAdopted: false,
+
+  // Consequences
+  warnings: 0,
+  debtWeeks: 0,
+  weekHadLanguageActivity: false,
+  sentHome: false,
+  crisisWeeksRemaining: 0,
+
+  // Leadership & transfers
+  leadership: 'missionary',
+  companionHistory: [],
+
+  // Mandatory activity for today
+  mandatoryActivity: null,
 
   // Day resolution results (for UI animation)
   lastDayResult: null,
@@ -55,7 +81,10 @@ const createInitialState = () => ({
 export const useGameStore = create((set, get) => ({
   ...createInitialState(),
 
+  startMTC: () => set({ screen: 'mtc' }),
+
   startGame: () => {
+    resetNamePool()
     const initial = createInitialState()
     set({
       ...initial,
@@ -68,6 +97,11 @@ export const useGameStore = create((set, get) => ({
         notifications: [],
       },
     })
+    // Roll mandatory activity for first day
+    const mandatoryActivity = rollMandatoryActivity(initial)
+    if (mandatoryActivity) {
+      set({ mandatoryActivity })
+    }
   },
 
   setActivity: (slot, activityId) => {
@@ -76,16 +110,52 @@ export const useGameStore = create((set, get) => ({
     }))
   },
 
+  setMinigameScore: (slot, score) => {
+    set((s) => ({
+      minigameScores: { ...s.minigameScores, [slot]: score },
+    }))
+  },
+
+  acceptMandatory: () => {
+    set((s) => ({
+      mandatoryActivity: s.mandatoryActivity
+        ? { ...s.mandatoryActivity, refused: false, accepted: true }
+        : null,
+    }))
+  },
+
+  refuseMandatory: () => {
+    set((s) => ({
+      mandatoryActivity: s.mandatoryActivity
+        ? { ...s.mandatoryActivity, refused: true, accepted: false }
+        : null,
+    }))
+  },
+
   endDay: () => {
     const state = get()
     const isPDay = state.day === 6
 
+    // If in crisis, skip this day
+    if (state.crisisWeeksRemaining > 0) {
+      get().advanceDay()
+      return
+    }
+
     const result = resolveDay(state, isPDay)
+
+    // Track language activities
+    let weekHadLanguage = state.weekHadLanguageActivity
+    if (result.languageActivityDone) {
+      weekHadLanguage = true
+    }
 
     // Handle special results
     let investigators = [...state.investigators]
     let baptisms = state.baptisms
     const investigatorChanges = []
+
+    let pendingObjection = null
 
     for (const special of result.specialResults) {
       if (special === 'advanceInvestigator') {
@@ -98,24 +168,42 @@ export const useGameStore = create((set, get) => ({
           if (advancement.result === 'baptized') {
             baptisms += 1
           }
+          // Check for objection
+          if (advancement.objection) {
+            pendingObjection = {
+              ...advancement.objection,
+              investigator: advancement.investigator,
+            }
+          }
         } else {
           investigatorChanges.push(advancement.text)
         }
       }
       if (special === 'englishClassContact') {
-        // Small chance of warming up Kiss Ági specifically
-        const agi = investigators.find((i) => i.id === 'kiss_agi' && i.isActive)
-        if (agi && Math.random() < 0.3) {
+        // Boost warmth for any active english-source investigator
+        const englishInv = investigators.find((i) => i.isActive && i.personality === 'English Student')
+        if (englishInv && Math.random() < 0.3) {
           investigators = investigators.map((inv) =>
-            inv.id === 'kiss_agi'
+            inv.id === englishInv.id
               ? { ...inv, warmth: Math.min(10, inv.warmth + 1) }
               : inv
           )
-          investigatorChanges.push('Kiss Ági seemed more engaged in English class today.')
+          investigatorChanges.push(`${englishInv.name} seemed more engaged in English class today.`)
         }
       }
       if (special === 'resetLaundry') {
         set({ laundryWeeksSkipped: 0 })
+      }
+    }
+
+    // Check for new investigators from activities
+    for (const slot of ['morning', 'afternoon', 'evening']) {
+      const activityId = state.schedule[slot]
+      if (!activityId) continue
+      const newInvestigator = checkNewInvestigator(activityId, investigators, result.newStats)
+      if (newInvestigator) {
+        investigators = [...investigators, newInvestigator]
+        investigatorChanges.push(`New contact: ${newInvestigator.name} (${newInvestigator.personality})`)
       }
     }
 
@@ -126,14 +214,19 @@ export const useGameStore = create((set, get) => ({
       companion: { ...s.companion, rapport: newRapport },
       investigators,
       baptisms,
+      weekHadLanguageActivity: weekHadLanguage,
       lastDayResult: {
         statDeltas: result.statDeltas,
         rapportDelta: result.rapportDelta,
         specialResults: result.specialResults,
         investigatorChanges,
+        mandatoryActivity: state.mandatoryActivity,
       },
       pendingEvent: result.triggeredEvent,
+      pendingObjection,
       schedule: { morning: null, afternoon: null, evening: null },
+      minigameScores: { morning: null, afternoon: null, evening: null },
+      mandatoryActivity: null,
       weekLog: {
         ...s.weekLog,
         events: result.triggeredEvent
@@ -143,8 +236,8 @@ export const useGameStore = create((set, get) => ({
       },
     }))
 
-    // Advance day (if no event pending, otherwise wait for event resolution)
-    if (!result.triggeredEvent) {
+    // Advance day (if no event or objection pending, otherwise wait for resolution)
+    if (!result.triggeredEvent && !pendingObjection) {
       get().advanceDay()
     }
   },
@@ -180,6 +273,37 @@ export const useGameStore = create((set, get) => ({
       ...(result.flags.catAdopted !== undefined ? { catAdopted: result.flags.catAdopted } : {}),
     }))
 
+    // Now advance the day (check for pending objection first)
+    if (get().pendingObjection) {
+      // Don't advance yet — wait for objection resolution
+    } else {
+      get().advanceDay()
+    }
+  },
+
+  resolveObjectionChoice: (effect) => {
+    const state = get()
+    if (!state.pendingObjection) return
+
+    const { investigator: inv } = state.pendingObjection
+    const resolved = resolveObjection(inv, effect)
+
+    set((s) => ({
+      investigators: s.investigators.map(i =>
+        i.id === resolved.id ? resolved : i
+      ),
+      pendingObjection: null,
+      weekLog: {
+        ...s.weekLog,
+        investigatorChanges: [
+          ...s.weekLog.investigatorChanges,
+          effect.advance
+            ? `${inv.name} resolved their concern about ${state.pendingObjection.trigger}.`
+            : `${inv.name} struggled with ${state.pendingObjection.trigger}. They stepped back.`,
+        ],
+      },
+    }))
+
     // Now advance the day
     get().advanceDay()
   },
@@ -189,28 +313,89 @@ export const useGameStore = create((set, get) => ({
     const nextDay = state.day + 1
 
     if (nextDay === 6) {
-      // Next is P-Day
-      set({ day: 6, screen: 'pday' })
+      // Next is P-Day — roll mandatory activity for P-Day
+      const mandatoryActivity = rollMandatoryActivity(state)
+      set({ day: 6, screen: 'pday', mandatoryActivity })
     } else if (nextDay > 6) {
       // Week is over, show summary
       set({ screen: 'summary' })
     } else {
-      set({ day: nextDay })
+      // Roll mandatory activity for next day
+      const mandatoryActivity = rollMandatoryActivity(state)
+      set({ day: nextDay, mandatoryActivity })
     }
   },
 
   endWeek: () => {
     const state = get()
+    const notifications = []
 
-    // Weekly investigator decay
-    const { investigators: decayedInvestigators, notifications } =
+    // --- Weekly Consequences ---
+
+    // 1. Investigator decay (aggressive: -2 warmth per week)
+    const { investigators: decayedInvestigators, notifications: invNotifications } =
       weeklyInvestigatorDecay(state.investigators)
+    notifications.push(...invNotifications)
 
-    // Laundry check
+    // 2. Laundry check
     let laundryWeeksSkipped = state.laundryWeeksSkipped + 1
-    const laundryNotifications = []
     if (laundryWeeksSkipped >= 2) {
-      laundryNotifications.push('You haven\'t done laundry in weeks. Your companion has noticed.')
+      notifications.push('You haven\'t done laundry in weeks. Your companion has noticed.')
+    }
+
+    // 3. Language decay (if no language activity this week)
+    let newLanguage = state.stats.language
+    if (!state.weekHadLanguageActivity) {
+      newLanguage = applyLanguageDecay(state.stats.language, false)
+      if (newLanguage < state.stats.language) {
+        notifications.push('Your Hungarian is getting rusty. You didn\'t study this week.')
+      }
+    }
+
+    // 4. Weekly expenses (food + transit)
+    const { newBudget, expense } = applyWeeklyExpenses(state.stats.budget)
+    notifications.push(`Weekly expenses: -${expense.toLocaleString()} Ft (food & transit)`)
+
+    // 5. Budget debt check
+    let { warnings } = state
+    let debtWeeks = state.debtWeeks
+    if (newBudget < 0) {
+      debtWeeks += 1
+      const debtResult = checkBudgetDebt({ ...state.stats, budget: newBudget }, debtWeeks)
+      if (debtResult) {
+        notifications.push(debtResult.text)
+        if (debtResult.warning) {
+          warnings += 1
+          notifications.push(`WARNING ${warnings}/${3}: Budget debt reported to mission office.`)
+        }
+      }
+    } else {
+      debtWeeks = 0
+    }
+
+    // 6. Companion report check
+    const reportResult = checkCompanionReport(state.stats, state.companion)
+    if (reportResult) {
+      warnings += 1
+      notifications.push(reportResult.text)
+      notifications.push(`WARNING ${warnings}/${3}: Official report filed.`)
+    }
+
+    // 7. Monthly stipend (every 4 weeks)
+    let stipendBudget = newBudget
+    if (state.week % 4 === 0) {
+      stipendBudget += MONTHLY_STIPEND
+      notifications.push(`Monthly stipend received: +${MONTHLY_STIPEND.toLocaleString()} Ft`)
+    }
+
+    // 8. Check if sent home
+    if (checkSentHome(warnings)) {
+      set({
+        screen: 'sent_home',
+        warnings,
+        stats: { ...state.stats, language: newLanguage, budget: stipendBudget },
+      })
+      return
     }
 
     const nextWeek = state.week + 1
@@ -221,21 +406,71 @@ export const useGameStore = create((set, get) => ({
       return
     }
 
-    set({
+    const updatedState = {
       day: 0,
       week: nextWeek,
       investigators: decayedInvestigators,
       laundryWeeksSkipped,
-      screen: 'game',
+      warnings,
+      debtWeeks,
+      weekHadLanguageActivity: false,
+      stats: {
+        ...state.stats,
+        language: newLanguage,
+        budget: stipendBudget,
+      },
       schedule: { morning: null, afternoon: null, evening: null },
+      minigameScores: { morning: null, afternoon: null, evening: null },
       lastDayResult: null,
       weekLog: {
         startStats: { ...state.stats },
         startRapport: state.companion.rapport,
         events: [],
         investigatorChanges: [],
-        notifications: [...notifications, ...laundryNotifications],
+        notifications,
       },
+    }
+
+    // Check if this is a transfer week
+    if (isTransferWeek(state.week)) {
+      set({
+        ...updatedState,
+        screen: 'transfer',
+      })
+    } else {
+      set({
+        ...updatedState,
+        screen: 'game',
+        mandatoryActivity: rollMandatoryActivity(state),
+      })
+    }
+  },
+
+  completeTransfer: ({ newCompanion, interviewEffects, promotion }) => {
+    const state = get()
+
+    // Apply interview stat effects
+    const newStats = { ...state.stats }
+    for (const [stat, delta] of Object.entries(interviewEffects || {})) {
+      if (newStats[stat] !== undefined) {
+        newStats[stat] = Math.max(0, Math.min(100, newStats[stat] + delta))
+      }
+    }
+
+    // Update leadership if promoted
+    const leadership = promotion || state.leadership
+
+    // Add old companion to history
+    const companionHistory = [...(state.companionHistory || []), state.companion.id]
+
+    set({
+      companion: { ...newCompanion, rapport: newCompanion.initialRapport },
+      stats: newStats,
+      leadership,
+      companionHistory,
+      transfer: (state.transfer || 1) + 1,
+      screen: 'game',
+      mandatoryActivity: rollMandatoryActivity(state),
     })
   },
 

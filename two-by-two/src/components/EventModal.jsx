@@ -24,7 +24,7 @@ export default function EventModal() {
   const eventResult = lastDayResult?.eventResult
 
   return (
-    <div style={styles.overlay}>
+    <div data-overlay style={styles.overlay}>
       <div
         className="fade-in"
         style={{
