@@ -1,8 +1,11 @@
+import { useCallback, useMemo } from 'react'
 import { useGameStore } from '../store/gameStore'
 import { INVESTIGATOR_STAGES } from '../data/investigators'
 import { getCompanionMood } from '../engine/companionEngine'
 import { WEEKS_PER_TRANSFER } from '../data/constants'
 import { isTransferWeek } from '../engine/transferEngine'
+import FocusableButtonGroup from '../components/FocusableButtonGroup'
+import { useGameShortcuts } from '../utils/useShortcuts'
 
 export default function WeeklySummary() {
   const stats = useGameStore((s) => s.stats)
@@ -22,6 +25,23 @@ export default function WeeklySummary() {
   const rapportDelta = companion.rapport - (weekLog.startRapport || 0)
 
   const mood = getCompanionMood(companion.rapport)
+
+  const summaryButtons = useMemo(() => [
+    { id: 'save', label: 'Save Mission [S]' },
+    { id: 'continue', label: isTransferWeek(week) ? 'Continue to Transfer [Enter]' : `Continue to Week ${week + 1} [Enter]` },
+  ], [week])
+
+  const handleSummarySelect = useCallback((index) => {
+    if (index === 0) saveGame()
+    if (index === 1) endWeek()
+  }, [saveGame, endWeek])
+
+  // Global shortcuts
+  const shortcutActions = useMemo(() => ({
+    s: saveGame,
+    Enter: endWeek,
+  }), [saveGame, endWeek])
+  useGameShortcuts(shortcutActions)
 
   // Transfer countdown
   const weeksUntilTransfer = WEEKS_PER_TRANSFER - ((week - 1) % WEEKS_PER_TRANSFER)
@@ -201,17 +221,12 @@ export default function WeeklySummary() {
           </div>
         )}
 
-        <button
-          onClick={saveGame}
-          style={styles.saveBtn}
-        >
-          <span className="pixel-font">Save Mission</span>
-        </button>
-        <button className="primary" onClick={endWeek} style={styles.continueBtn}>
-          {isTransferWeek(week)
-            ? 'Continue to Transfer'
-            : `Continue to Week ${week + 1}`}
-        </button>
+        <FocusableButtonGroup
+          buttons={summaryButtons}
+          onSelect={handleSummarySelect}
+          orientation="vertical"
+          autoFocus
+        />
       </div>
     </div>
   )

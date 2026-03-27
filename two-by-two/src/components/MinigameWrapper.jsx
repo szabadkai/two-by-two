@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { useFocusTrap, useAutoFocus } from '../utils/focusManager'
 
 /**
  * Shared wrapper for all minigames.
@@ -16,6 +17,11 @@ export default function MinigameWrapper({
   const [maxScore, setMaxScore] = useState(1)
   const [isActive, setIsActive] = useState(true)
   const [showResult, setShowResult] = useState(false)
+
+  const containerRef = useRef(null)
+  const doneBtnRef = useRef(null)
+  useFocusTrap(containerRef, true)
+  useAutoFocus(doneBtnRef, showResult)
 
   // Timer countdown
   useEffect(() => {
@@ -74,7 +80,7 @@ export default function MinigameWrapper({
 
   return (
     <div data-overlay style={styles.overlay}>
-      <div style={styles.container}>
+      <div ref={containerRef} role="dialog" aria-modal="true" style={styles.container}>
         {/* Header */}
         <div style={styles.header}>
           <span className="pixel-font" style={styles.title}>{title}</span>
@@ -116,6 +122,7 @@ export default function MinigameWrapper({
               Score: {score}/{maxScore} ({Math.round(finalScore * 100)}%)
             </span>
             <button
+              ref={doneBtnRef}
               className="primary"
               onClick={() => onComplete(finalScore)}
               style={styles.doneBtn}

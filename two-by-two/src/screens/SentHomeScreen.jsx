@@ -1,10 +1,15 @@
+import { useRef } from 'react'
 import { useGameStore } from '../store/gameStore'
+import { useAutoFocus } from '../utils/focusManager'
 
 export default function SentHomeScreen() {
   const week = useGameStore((s) => s.week)
   const baptisms = useGameStore((s) => s.baptisms)
   const stats = useGameStore((s) => s.stats)
   const goToScreen = useGameStore((s) => s.goToScreen)
+
+  const btnRef = useRef(null)
+  useAutoFocus(btnRef)
 
   const weeksServed = week
   const monthsServed = Math.floor(weeksServed / 4.3)
@@ -52,6 +57,7 @@ export default function SentHomeScreen() {
         </div>
 
         <button
+          ref={btnRef}
           className="primary"
           onClick={() => goToScreen('title')}
           style={styles.btn}

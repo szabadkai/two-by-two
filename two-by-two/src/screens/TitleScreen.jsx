@@ -1,6 +1,8 @@
-import { useRef, useState, useEffect } from 'react'
+import { useRef, useState, useEffect, useMemo, useCallback } from 'react'
 import { useGameStore } from '../store/gameStore'
 import { hasLocalSave, getLocalSaveInfo } from '../utils/saveLoad'
+import FocusableButtonGroup from '../components/FocusableButtonGroup'
+import { useNumberKeySelect } from '../utils/focusManager'
 
 export default function TitleScreen() {
   const startMTC = useGameStore((s) => s.startMTC)
@@ -16,6 +18,24 @@ export default function TitleScreen() {
       setSaveInfo(getLocalSaveInfo())
     }
   }, [])
+
+  const actions = useMemo(() => {
+    const list = [
+      { id: 'new', label: 'New Mission', action: startMTC },
+    ]
+    if (saveInfo) {
+      list.push({ id: 'continue', label: `Continue Mission (Week ${saveInfo.week || '?'})`, action: loadAutoSave })
+    }
+    list.push({ id: 'skip', label: 'Skip Tutorial', action: startGame })
+    list.push({ id: 'load', label: 'Load from File', action: () => fileInputRef.current?.click() })
+    return list
+  }, [saveInfo, startMTC, loadAutoSave, startGame])
+
+  const handleSelect = useCallback((index) => {
+    actions[index]?.action()
+  }, [actions])
+
+  useNumberKeySelect(actions.length, handleSelect, true)
 
   const handleLoadFile = (e) => {
     const file = e.target.files[0]
@@ -43,33 +63,12 @@ export default function TitleScreen() {
         <p style={styles.tagline}>
           24 months. One name tag. Zero Hungarian vocabulary.
         </p>
-        <button
-          className="primary"
-          style={styles.startBtn}
-          onClick={startMTC}
-        >
-          New Mission
-        </button>
-        {saveInfo && (
-          <button
-            style={styles.continueBtn}
-            onClick={loadAutoSave}
-          >
-            Continue Mission (Week {saveInfo.week || '?'})
-          </button>
-        )}
-        <button
-          style={styles.secondaryBtn}
-          onClick={startGame}
-        >
-          Skip Tutorial
-        </button>
-        <button
-          style={styles.secondaryBtn}
-          onClick={() => fileInputRef.current?.click()}
-        >
-          Load from File
-        </button>
+        <FocusableButtonGroup
+          buttons={actions}
+          onSelect={handleSelect}
+          orientation="vertical"
+          autoFocus
+        />
         <input
           ref={fileInputRef}
           type="file"
@@ -131,34 +130,6 @@ const styles = {
     color: 'var(--text-muted)',
     fontStyle: 'italic',
     maxWidth: '300px',
-  },
-  startBtn: {
-    marginTop: '16px',
-    padding: '12px 32px',
-    fontSize: '13px',
-  },
-  continueBtn: {
-    marginTop: '8px',
-    padding: '10px 28px',
-    fontSize: '12px',
-    background: 'var(--panel)',
-    border: '2px solid var(--accent)',
-    color: 'var(--accent-bright)',
-    cursor: 'pointer',
-    borderRadius: '2px',
-    fontFamily: 'var(--font-pixel)',
-    letterSpacing: '1px',
-  },
-  secondaryBtn: {
-    padding: '8px 24px',
-    fontSize: '10px',
-    background: 'var(--panel-light)',
-    border: '1px solid var(--border)',
-    color: 'var(--text-dim)',
-    cursor: 'pointer',
-    borderRadius: '2px',
-    fontFamily: 'var(--font-pixel)',
-    letterSpacing: '1px',
   },
   hint: {
     fontSize: '10px',

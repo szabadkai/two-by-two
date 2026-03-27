@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef, useMemo } from 'react'
 import { useGameStore } from '../store/gameStore'
 import { TOTAL_WEEKS, TIME_SLOTS } from '../data/constants'
 import { PDAY_ACTIVITIES } from '../data/activities'
@@ -10,6 +10,8 @@ import GameCanvas from '../components/GameCanvas'
 import InteractionPrompt from '../components/InteractionPrompt'
 import MinigameLauncher from '../components/MinigameLauncher'
 import { ACTIVITY_MINIGAME_MAP } from '../engine/minigameEngine'
+import TouchControls from '../components/TouchControls'
+import { useGameShortcuts } from '../utils/useShortcuts'
 
 // P-Day maps certain locations to P-Day specific activities
 const PDAY_ACTIVITY_MAP = {
@@ -84,6 +86,7 @@ export default function PDayView() {
     setMinigameScore(slot, score)
     setActiveMinigame(null)
     setCurrentSlotIndex(prev => prev + 1)
+    setTimeout(() => canvasContainerRef.current?.focus(), 0)
   }, [activeMinigame, setActivity, setMinigameScore])
 
   const handleMinigameCancel = useCallback(() => {
@@ -93,6 +96,7 @@ export default function PDayView() {
     setMinigameScore(slot, 0)
     setActiveMinigame(null)
     setCurrentSlotIndex(prev => prev + 1)
+    setTimeout(() => canvasContainerRef.current?.focus(), 0)
   }, [activeMinigame, setActivity, setMinigameScore])
 
   const cancelInteraction = useCallback(() => {
@@ -104,6 +108,32 @@ export default function PDayView() {
     setCurrentSlotIndex(0)
     setPendingInteraction(null)
   }, [endDay])
+
+  // Canvas container ref for focus return
+  const canvasContainerRef = useRef(null)
+
+  // Global shortcuts: E = End P-Day
+  const shortcutActions = useMemo(() => ({
+    e: allSlotsFilled ? handleEndDay : undefined,
+  }), [allSlotsFilled, handleEndDay])
+  useGameShortcuts(shortcutActions, allSlotsFilled)
+
+  // Sidebar arrow key navigation between cards
+  const handleSidebarKeyDown = useCallback((e) => {
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      const cards = e.currentTarget.querySelectorAll('[data-card]')
+      if (!cards.length) return
+      const currentIndex = Array.from(cards).indexOf(document.activeElement)
+      let nextIndex
+      if (e.key === 'ArrowDown') {
+        nextIndex = currentIndex < cards.length - 1 ? currentIndex + 1 : 0
+      } else {
+        nextIndex = currentIndex > 0 ? currentIndex - 1 : cards.length - 1
+      }
+      e.preventDefault()
+      cards[nextIndex]?.focus()
+    }
+  }, [])
 
   return (
     <div style={styles.container}>
@@ -132,8 +162,8 @@ export default function PDayView() {
       </p>
 
       {/* Main area */}
-      <div style={styles.mainArea}>
-        <div style={styles.canvasContainer}>
+      <div className="main-area" style={styles.mainArea}>
+        <div ref={canvasContainerRef} tabIndex={0} style={styles.canvasContainer}>
           {/* Slot indicator */}
           <div style={styles.slotIndicator}>
             {TIME_SLOTS.map((slot, i) => {
@@ -171,6 +201,8 @@ export default function PDayView() {
             )}
           </div>
 
+          <TouchControls />
+
           <div style={styles.controlsHint}>
             <span className="pixel-font" style={styles.hintText}>
               WASD/Arrows: Move · Space: Interact
@@ -178,7 +210,7 @@ export default function PDayView() {
           </div>
         </div>
 
-        <div style={styles.sidebar}>
+        <div className="sidebar" tabIndex={0} onKeyDown={handleSidebarKeyDown} style={styles.sidebar}>
           <CompanionCard companion={companion} />
           {[...investigators].sort((a, b) => {
             if (a.isActive && !b.isActive) return -1
@@ -209,7 +241,7 @@ export default function PDayView() {
           onClick={handleEndDay}
           style={styles.endDayBtn}
         >
-          End P-Day
+          End P-Day {allSlotsFilled && <span className="shortcut-hint">[E]</span>}
         </button>
       </div>
     </div>

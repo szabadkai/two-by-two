@@ -1,7 +1,10 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef, useMemo } from 'react'
 import { useGameStore } from '../store/gameStore'
 import { generateTransfer, LEADERSHIP_LABELS } from '../engine/transferEngine'
 import { getCompanionMood } from '../engine/companionEngine'
+import FocusableButtonGroup from '../components/FocusableButtonGroup'
+import { useAutoFocus, useNumberKeySelect } from '../utils/focusManager'
+import { useGameShortcuts } from '../utils/useShortcuts'
 
 /**
  * Transfer Screen — multi-step sequence:
@@ -24,6 +27,32 @@ export default function TransferScreen() {
 
   const mood = getCompanionMood(companion.rapport)
   const { departingCompanion, newCompanion, interview } = transfer
+
+  const farewellBtnRef = useRef(null)
+  const interviewContinueBtnRef = useRef(null)
+  const revealBtnRef = useRef(null)
+
+  useAutoFocus(farewellBtnRef, phase === 'farewell')
+  useAutoFocus(interviewContinueBtnRef, !!interviewResult)
+  useAutoFocus(revealBtnRef, phase === 'reveal')
+
+  const interviewButtons = useMemo(() =>
+    interview.choices.map((choice, i) => ({ id: `choice-${i}`, label: choice.text })),
+    [interview.choices]
+  )
+
+  useNumberKeySelect(
+    interview.choices.length,
+    (index) => handleInterviewChoice(interview.choices[index]),
+    phase === 'interview' && !interviewResult
+  )
+
+  // Global shortcuts: Enter = Continue (except during interview choices)
+  const canContinueWithEnter = phase === 'farewell' || (phase === 'interview' && !!interviewResult) || phase === 'reveal'
+  const transferShortcuts = useMemo(() => ({
+    Enter: canContinueWithEnter ? handleContinue : undefined,
+  }), [canContinueWithEnter, handleContinue])
+  useGameShortcuts(transferShortcuts, canContinueWithEnter)
 
   // Handle interview choice
   const handleInterviewChoice = useCallback((choice) => {
@@ -96,7 +125,7 @@ export default function TransferScreen() {
               </p>
             </div>
 
-            <button className="primary" onClick={handleContinue} style={styles.continueBtn}>
+            <button ref={farewellBtnRef} className="primary" onClick={handleContinue} style={styles.continueBtn}>
               <span className="pixel-font">Continue</span>
             </button>
           </div>
@@ -121,17 +150,12 @@ export default function TransferScreen() {
             </div>
 
             {!interviewResult && (
-              <div style={styles.choices}>
-                {interview.choices.map((choice, i) => (
-                  <button
-                    key={i}
-                    onClick={() => handleInterviewChoice(choice)}
-                    style={styles.choiceBtn}
-                  >
-                    <span style={styles.choiceText}>{choice.text}</span>
-                  </button>
-                ))}
-              </div>
+              <FocusableButtonGroup
+                buttons={interviewButtons}
+                onSelect={(index) => handleInterviewChoice(interview.choices[index])}
+                orientation="vertical"
+                autoFocus
+              />
             )}
 
             {interviewResult && (
@@ -148,7 +172,7 @@ export default function TransferScreen() {
                   </div>
                 )}
 
-                <button className="primary" onClick={handleContinue} style={styles.continueBtn}>
+                <button ref={interviewContinueBtnRef} className="primary" onClick={handleContinue} style={styles.continueBtn}>
                   <span className="pixel-font">Continue</span>
                 </button>
               </>
@@ -228,7 +252,7 @@ export default function TransferScreen() {
             >
               <span className="pixel-font">Save Progress</span>
             </button>
-            <button className="primary" onClick={handleContinue} style={styles.continueBtn}>
+            <button ref={revealBtnRef} className="primary" onClick={handleContinue} style={styles.continueBtn}>
               <span className="pixel-font">Begin Transfer</span>
             </button>
           </div>

@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { FILL_BLANKS } from '../../data/minigameData'
+import FocusableButtonGroup from '../FocusableButtonGroup'
+import { useNumberKeySelect } from '../../utils/focusManager'
 
 /**
  * English Class Minigame: Fill in missing words in English sentences.
@@ -46,6 +48,12 @@ export default function FillBlanks({ difficulty, onScore, finishEarly, isActive 
     }, 800)
   }, [isActive, feedback, current, currentIndex, numQuestions, correct, finishEarly])
 
+  useNumberKeySelect(
+    shuffledOptions.length,
+    (index) => handleChoice(shuffledOptions[index]),
+    isActive && !feedback
+  )
+
   if (!current) return null
 
   // Render sentence with blank highlighted
@@ -70,21 +78,13 @@ export default function FillBlanks({ difficulty, onScore, finishEarly, isActive 
 
       {/* Options */}
       <div style={styles.options}>
-        {shuffledOptions.map((opt) => (
-          <button
-            key={opt}
-            onClick={() => handleChoice(opt)}
-            disabled={!!feedback}
-            style={{
-              ...styles.optionBtn,
-              borderColor: feedback
-                ? opt === current.blank ? 'var(--success)' : 'var(--border)'
-                : 'var(--border-light)',
-            }}
-          >
-            <span className="pixel-font" style={styles.optionText}>{opt}</span>
-          </button>
-        ))}
+        <FocusableButtonGroup
+          buttons={shuffledOptions.map((opt, i) => ({ id: `opt-${i}`, label: opt }))}
+          onSelect={(index) => handleChoice(shuffledOptions[index])}
+          orientation="horizontal"
+          disabled={!!feedback}
+          autoFocus
+        />
       </div>
 
       {/* Feedback */}

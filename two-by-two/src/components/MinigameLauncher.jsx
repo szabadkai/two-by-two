@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import MinigameWrapper from './MinigameWrapper'
 import TypingDrill from './minigames/TypingDrill'
 import TeachingCards from './minigames/TeachingCards'
@@ -24,16 +25,17 @@ const MINIGAME_COMPONENTS = {
  */
 export default function MinigameLauncher({ activityId, stats, onComplete, onCancel }) {
   const minigameType = ACTIVITY_MINIGAME_MAP[activityId]
+  const config = minigameType ? MINIGAME_COMPONENTS[minigameType] : null
+  const shouldAutoResolve = !minigameType || !config
 
-  if (!minigameType) {
-    // No minigame for this activity — auto-complete with average score
-    onComplete(0.6)
-    return null
-  }
+  // Auto-resolve activities with no minigame — must be in useEffect, not during render
+  useEffect(() => {
+    if (shouldAutoResolve) {
+      onComplete(0.6)
+    }
+  }, [shouldAutoResolve, onComplete])
 
-  const config = MINIGAME_COMPONENTS[minigameType]
-  if (!config) {
-    onComplete(0.6)
+  if (shouldAutoResolve) {
     return null
   }
 

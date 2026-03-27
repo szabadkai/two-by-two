@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { INVESTIGATOR_CONCERNS, SCRIPTURE_CARDS } from '../../data/minigameData'
+import FocusableButtonGroup from '../FocusableButtonGroup'
+import { useNumberKeySelect } from '../../utils/focusManager'
 
 /**
  * Teaching Minigame: Match scripture cards to investigator concerns.
@@ -54,6 +56,12 @@ export default function TeachingCards({ difficulty, onScore, finishEarly, isActi
     }, 1000)
   }, [isActive, feedback, current, currentRound, numRounds, correct, finishEarly])
 
+  useNumberKeySelect(
+    cardOptions.length,
+    (index) => handleCardClick(cardOptions[index]),
+    isActive && !feedback
+  )
+
   if (!current) return null
 
   return (
@@ -71,27 +79,16 @@ export default function TeachingCards({ difficulty, onScore, finishEarly, isActi
 
       {/* Card options */}
       <div style={styles.cardsGrid}>
-        {cardOptions.map((cardId) => {
-          const card = SCRIPTURE_CARDS[cardId]
-          const isChosen = feedback && cardId === current.correctCard
-          return (
-            <button
-              key={cardId}
-              onClick={() => handleCardClick(cardId)}
-              disabled={!!feedback}
-              style={{
-                ...styles.card,
-                borderColor: feedback
-                  ? cardId === current.correctCard ? 'var(--success)' : 'var(--border)'
-                  : 'var(--border-light)',
-                opacity: feedback && cardId !== current.correctCard ? 0.5 : 1,
-              }}
-            >
-              <span className="pixel-font" style={styles.cardTitle}>{card.label}</span>
-              <span style={styles.cardDesc}>{card.description}</span>
-            </button>
-          )
-        })}
+        <FocusableButtonGroup
+          buttons={cardOptions.map((cardId) => {
+            const card = SCRIPTURE_CARDS[cardId]
+            return { id: cardId, label: `${card.label} - ${card.description}` }
+          })}
+          onSelect={(index) => handleCardClick(cardOptions[index])}
+          orientation="vertical"
+          disabled={!!feedback}
+          autoFocus
+        />
       </div>
 
       {/* Feedback */}

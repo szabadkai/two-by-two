@@ -25,7 +25,7 @@ export const ACTIVITY_MINIGAME_MAP = {
   sports: null,
   companion_activity: 'memory',
   // Visit investigator
-  visit_investigator: 'teaching',
+  visit_investigator: 'cards',
   // Shopping activities
   buy_food: null,
   buy_peanut_butter: null,

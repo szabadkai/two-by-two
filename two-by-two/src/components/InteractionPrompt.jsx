@@ -1,13 +1,32 @@
+import { useRef, useCallback, useEffect } from 'react'
+import FocusableButtonGroup from './FocusableButtonGroup'
+import { useFocusTrap } from '../utils/focusManager'
+
 /**
  * Overlay prompt shown when player interacts with an activity spot.
  * Confirms the activity selection for the current time slot.
  */
 export default function InteractionPrompt({ interaction, timeSlot, onConfirm, onCancel }) {
+  const modalRef = useRef(null)
+  useFocusTrap(modalRef, !!interaction)
+
+  useEffect(() => {
+    if (!interaction) return
+    const handler = (e) => {
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        onCancel()
+      }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [interaction, onCancel])
+
   if (!interaction) return null
 
   return (
-    <div style={styles.overlay}>
-      <div className="panel fade-in" style={styles.modal}>
+    <div data-overlay style={styles.overlay}>
+      <div ref={modalRef} role="dialog" aria-modal="true" className="panel fade-in" style={styles.modal}>
         <div style={styles.header}>
           <span className="pixel-font" style={styles.slotLabel}>{timeSlot}</span>
           <span className="pixel-font" style={styles.typeLabel}>{interaction.type}</span>
@@ -16,14 +35,16 @@ export default function InteractionPrompt({ interaction, timeSlot, onConfirm, on
         <h3 style={styles.title}>{interaction.label}</h3>
         <p style={styles.description}>{interaction.prompt}</p>
 
-        <div style={styles.actions}>
-          <button onClick={onConfirm} style={styles.confirmBtn}>
-            <span className="pixel-font">Yes</span>
-          </button>
-          <button onClick={onCancel} style={styles.cancelBtn}>
-            <span className="pixel-font">Not now</span>
-          </button>
-        </div>
+        <FocusableButtonGroup
+          buttons={[
+            { id: 'yes', label: '[1] Yes' },
+            { id: 'no', label: '[2] Not now' },
+          ]}
+          onSelect={(index) => index === 0 ? onConfirm() : onCancel()}
+          onCancel={onCancel}
+          orientation="horizontal"
+          autoFocus
+        />
       </div>
     </div>
   )

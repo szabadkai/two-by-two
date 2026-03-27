@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useGameStore } from '../store/gameStore'
+import { useAutoFocus } from '../utils/focusManager'
 
 // Typewriter line — reveals text character by character
 function TypewriterLine({ text, speed = 30, active = true, onDone, style }) {
@@ -113,6 +114,16 @@ export default function EndgameScreen() {
   const [phase, setPhase] = useState('homecoming') // homecoming | stats | archetype | grade | button
   const [lineIndex, setLineIndex] = useState(0)
 
+  const statsBtnRef = useRef(null)
+  const archetypeBtnRef = useRef(null)
+  const gradeBtnRef = useRef(null)
+  const newMissionBtnRef = useRef(null)
+
+  useAutoFocus(statsBtnRef, phase === 'stats')
+  useAutoFocus(archetypeBtnRef, phase === 'archetype')
+  useAutoFocus(gradeBtnRef, phase === 'grade')
+  useAutoFocus(newMissionBtnRef, phase === 'button')
+
   const weeksServed = Math.min(week, 104)
   const { language, spirit, skills, obedience } = stats
 
@@ -136,12 +147,23 @@ export default function EndgameScreen() {
       <div className="fade-in" style={styles.content}>
         <span className="pixel-font" style={styles.sectionLabel}>HOMECOMING</span>
 
-        <TypewriterBlock
-          lines={homecomingLines}
-          lineIndex={lineIndex}
-          onLineDone={() => setLineIndex(i => i + 1)}
-          onAllDone={() => setPhase('stats')}
-        />
+        <div
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === ' ' || e.key === 'Enter') {
+              e.preventDefault()
+              e.currentTarget.querySelector('p')?.click()
+            }
+          }}
+          style={{ outline: 'none' }}
+        >
+          <TypewriterBlock
+            lines={homecomingLines}
+            lineIndex={lineIndex}
+            onLineDone={() => setLineIndex(i => i + 1)}
+            onAllDone={() => setPhase('stats')}
+          />
+        </div>
 
         {phase !== 'homecoming' && (
           <div className="fade-in" style={styles.statsSection}>
@@ -182,6 +204,7 @@ export default function EndgameScreen() {
             </div>
             {phase === 'stats' && (
               <button
+                ref={statsBtnRef}
                 className="primary fade-in"
                 style={styles.continueBtn}
                 onClick={() => setPhase('archetype')}
@@ -201,6 +224,7 @@ export default function EndgameScreen() {
             </div>
             {phase === 'archetype' && (
               <button
+                ref={archetypeBtnRef}
                 className="primary fade-in"
                 style={styles.continueBtn}
                 onClick={() => setPhase('grade')}
@@ -223,6 +247,7 @@ export default function EndgameScreen() {
             <span style={styles.gradeScore}>{score} / 600</span>
             {phase === 'grade' && (
               <button
+                ref={gradeBtnRef}
                 className="primary fade-in"
                 style={styles.continueBtn}
                 onClick={() => setPhase('button')}
@@ -235,6 +260,7 @@ export default function EndgameScreen() {
 
         {phase === 'button' && (
           <button
+            ref={newMissionBtnRef}
             className="primary fade-in"
             style={styles.newMissionBtn}
             onClick={() => goToScreen('title')}

@@ -1,5 +1,7 @@
-import { useState } from 'react'
+import { useState, useRef, useCallback, useMemo } from 'react'
 import { useGameStore } from '../store/gameStore'
+import FocusableButtonGroup from './FocusableButtonGroup'
+import { useFocusTrap, useAutoFocus, useNumberKeySelect } from '../utils/focusManager'
 
 export default function EventModal() {
   const pendingEvent = useGameStore((s) => s.pendingEvent)
@@ -7,6 +9,22 @@ export default function EventModal() {
   const lastDayResult = useGameStore((s) => s.lastDayResult)
   const [phase, setPhase] = useState('choosing') // 'choosing' | 'outcome'
   const [chosenIndex, setChosenIndex] = useState(null)
+
+  const modalRef = useRef(null)
+  const continueBtnRef = useRef(null)
+  useFocusTrap(modalRef, !!pendingEvent)
+  useAutoFocus(continueBtnRef, phase === 'outcome')
+
+  const choiceButtons = useMemo(() =>
+    pendingEvent ? pendingEvent.choices.map((c, i) => ({ id: `choice-${i}`, label: c.label })) : [],
+    [pendingEvent]
+  )
+
+  useNumberKeySelect(
+    pendingEvent?.choices?.length || 0,
+    handleChoice,
+    phase === 'choosing' && !!pendingEvent
+  )
 
   if (!pendingEvent) return null
 
@@ -26,6 +44,9 @@ export default function EventModal() {
   return (
     <div data-overlay style={styles.overlay}>
       <div
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
         className="fade-in"
         style={{
           ...styles.modal,
@@ -38,17 +59,12 @@ export default function EventModal() {
         <p style={styles.description}>{pendingEvent.description}</p>
 
         {phase === 'choosing' && (
-          <div style={styles.choices}>
-            {pendingEvent.choices.map((choice, i) => (
-              <button
-                key={i}
-                onClick={() => handleChoice(i)}
-                style={styles.choiceBtn}
-              >
-                {choice.label}
-              </button>
-            ))}
-          </div>
+          <FocusableButtonGroup
+            buttons={choiceButtons}
+            onSelect={handleChoice}
+            orientation="vertical"
+            autoFocus
+          />
         )}
 
         {phase === 'outcome' && eventResult && (
@@ -86,7 +102,7 @@ export default function EventModal() {
                 )}
               </div>
             )}
-            <button className="primary" onClick={handleContinue} style={styles.continueBtn}>
+            <button ref={continueBtnRef} className="primary" onClick={handleContinue} style={styles.continueBtn}>
               Continue
             </button>
           </div>

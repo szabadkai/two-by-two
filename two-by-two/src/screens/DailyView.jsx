@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef, useMemo } from 'react'
 import { useGameStore } from '../store/gameStore'
 import { DAY_NAMES, DAY_NAMES_EN, TOTAL_WEEKS, WEEKS_PER_TRANSFER, TIME_SLOTS } from '../data/constants'
 import StatBar from '../components/StatBar'
@@ -8,6 +8,10 @@ import WeekProgress from '../components/WeekProgress'
 import GameCanvas from '../components/GameCanvas'
 import InteractionPrompt from '../components/InteractionPrompt'
 import MinigameLauncher from '../components/MinigameLauncher'
+import TouchControls from '../components/TouchControls'
+import FocusableButtonGroup from '../components/FocusableButtonGroup'
+import { useNumberKeySelect } from '../utils/focusManager'
+import { useGameShortcuts } from '../utils/useShortcuts'
 import { ACTIVITY_MINIGAME_MAP } from '../engine/minigameEngine'
 
 const TIME_SLOT_NAMES = { morning: 'Morning', afternoon: 'Afternoon', evening: 'Evening' }
@@ -123,6 +127,7 @@ export default function DailyView() {
     setMinigameScore(slot, score)
     setActiveMinigame(null)
     advanceSlot()
+    setTimeout(() => canvasContainerRef.current?.focus(), 0)
   }, [activeMinigame, setActivity, setMinigameScore, advanceSlot])
 
   // Minigame cancelled (skip with score 0)
@@ -133,6 +138,7 @@ export default function DailyView() {
     setMinigameScore(slot, 0)
     setActiveMinigame(null)
     advanceSlot()
+    setTimeout(() => canvasContainerRef.current?.focus(), 0)
   }, [activeMinigame, setActivity, setMinigameScore, advanceSlot])
 
   const cancelInteraction = useCallback(() => {
@@ -158,6 +164,38 @@ export default function DailyView() {
   const handleRefuseMandatory = useCallback(() => {
     refuseMandatory()
   }, [refuseMandatory])
+
+  // Number key support for mandatory activity: 1=Accept, 2=Refuse
+  useNumberKeySelect(2, useCallback((index) => {
+    if (index === 0) handleAcceptMandatory()
+    else handleRefuseMandatory()
+  }, [handleAcceptMandatory, handleRefuseMandatory]), mandatoryPending)
+
+  // Canvas container ref for focus return
+  const canvasContainerRef = useRef(null)
+
+  // Global shortcuts: E = End Day
+  const shortcutActions = useMemo(() => ({
+    e: allSlotsFilled ? handleEndDay : undefined,
+  }), [allSlotsFilled, handleEndDay])
+  useGameShortcuts(shortcutActions, allSlotsFilled)
+
+  // Sidebar arrow key navigation between cards
+  const handleSidebarKeyDown = useCallback((e) => {
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      const cards = e.currentTarget.querySelectorAll('[data-card]')
+      if (!cards.length) return
+      const currentIndex = Array.from(cards).indexOf(document.activeElement)
+      let nextIndex
+      if (e.key === 'ArrowDown') {
+        nextIndex = currentIndex < cards.length - 1 ? currentIndex + 1 : 0
+      } else {
+        nextIndex = currentIndex > 0 ? currentIndex - 1 : cards.length - 1
+      }
+      e.preventDefault()
+      cards[nextIndex]?.focus()
+    }
+  }, [])
 
   return (
     <div style={styles.container}>
@@ -201,16 +239,21 @@ export default function DailyView() {
           </span>
           <span style={styles.mandatoryTitle}>{mandatoryActivity.label}</span>
           <span style={styles.mandatoryDesc}>{mandatoryActivity.description}</span>
-          <div style={styles.mandatoryActions}>
-            <button onClick={handleAcceptMandatory} style={styles.mandatoryAccept}>Accept</button>
-            <button onClick={handleRefuseMandatory} style={styles.mandatoryRefuse}>Refuse</button>
-          </div>
+          <FocusableButtonGroup
+            buttons={[
+              { id: 'accept', label: 'Accept' },
+              { id: 'refuse', label: 'Refuse' },
+            ]}
+            onSelect={(index) => index === 0 ? handleAcceptMandatory() : handleRefuseMandatory()}
+            orientation="horizontal"
+            autoFocus
+          />
         </div>
       )}
 
       {/* Main game area: canvas + sidebar */}
-      <div style={styles.mainArea}>
-        <div style={styles.canvasContainer}>
+      <div className="main-area" style={styles.mainArea}>
+        <div ref={canvasContainerRef} tabIndex={0} style={styles.canvasContainer}>
           {/* Time slot indicator */}
           <div style={styles.slotIndicator}>
             {TIME_SLOTS.map((slot, i) => {
@@ -256,6 +299,8 @@ export default function DailyView() {
             )}
           </div>
 
+          <TouchControls />
+
           {/* Controls hint */}
           <div style={styles.controlsHint}>
             <span className="pixel-font" style={styles.hintText}>
@@ -265,7 +310,7 @@ export default function DailyView() {
         </div>
 
         {/* Sidebar */}
-        <div style={styles.sidebar}>
+        <div className="sidebar" tabIndex={0} onKeyDown={handleSidebarKeyDown} style={styles.sidebar}>
           <CompanionCard companion={companion} />
           {[...investigators].sort((a, b) => {
             if (a.isActive && !b.isActive) return -1
@@ -305,7 +350,7 @@ export default function DailyView() {
           onClick={handleEndDay}
           style={styles.endDayBtn}
         >
-          End Day
+          End Day {allSlotsFilled && <span className="shortcut-hint">[E]</span>}
         </button>
       </div>
     </div>

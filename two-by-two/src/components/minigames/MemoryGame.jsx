@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { MEMORY_PAIRS } from '../../data/minigameData'
+import { useFocusNavigation } from '../../utils/focusManager'
 
 /**
  * Companion Study Minigame: Match pairs of scripture reference cards.
@@ -67,7 +68,14 @@ export default function MemoryGame({ difficulty, onScore, finishEarly, isActive 
     }
   }, [isActive, cards, selected, matches, numPairs, finishEarly])
 
+  const cardRefs = useRef([])
   const cols = numPairs <= 4 ? 4 : numPairs <= 6 ? 4 : 4
+  const rows = Math.ceil(cards.length / cols)
+  const { focusedIndex, handleKeyDown } = useFocusNavigation(
+    cardRefs.current,
+    'grid',
+    { rows, cols }
+  )
 
   return (
     <div style={styles.container}>
@@ -80,11 +88,19 @@ export default function MemoryGame({ difficulty, onScore, finishEarly, isActive 
         </span>
       </div>
 
-      <div style={{ ...styles.grid, gridTemplateColumns: `repeat(${cols}, 1fr)` }}>
+      <div style={{ ...styles.grid, gridTemplateColumns: `repeat(${cols}, 1fr)` }} onKeyDown={handleKeyDown}>
         {cards.map((card, i) => (
           <button
             key={card.id}
+            ref={el => cardRefs.current[i] = el}
+            tabIndex={i === 0 ? 0 : -1}
             onClick={() => handleCardClick(i)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                handleCardClick(i)
+              }
+            }}
             style={{
               ...styles.card,
               background: card.matched

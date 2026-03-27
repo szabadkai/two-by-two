@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { CONTACT_DIALOGUES } from '../../data/minigameData'
+import FocusableButtonGroup from '../FocusableButtonGroup'
+import { useNumberKeySelect } from '../../utils/focusManager'
 
 /**
  * Street Contacting Minigame: Timed dialogue tree with NPCs.
@@ -69,6 +71,12 @@ export default function ContactDialogue({ difficulty, onScore, finishEarly, isAc
     }, 1000)
   }, [isActive, feedback, exchangeIndex, total, totalScore, maxPossible, difficulty, finishEarly])
 
+  useNumberKeySelect(
+    current ? current.options.length : 0,
+    (index) => handleChoice(current.options[index]),
+    isActive && !feedback && !failed
+  )
+
   return (
     <div style={styles.container}>
       {/* NPC info */}
@@ -105,15 +113,12 @@ export default function ContactDialogue({ difficulty, onScore, finishEarly, isAc
           {/* Options */}
           {!feedback && (
             <div style={styles.options}>
-              {current.options.map((opt, i) => (
-                <button
-                  key={i}
-                  onClick={() => handleChoice(opt)}
-                  style={styles.optionBtn}
-                >
-                  {opt.text}
-                </button>
-              ))}
+              <FocusableButtonGroup
+                buttons={current.options.map((opt, i) => ({ id: `opt-${i}`, label: opt.text }))}
+                onSelect={(index) => handleChoice(current.options[index])}
+                orientation="vertical"
+                autoFocus
+              />
             </div>
           )}
         </>

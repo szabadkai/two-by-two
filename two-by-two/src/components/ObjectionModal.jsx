@@ -1,4 +1,6 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef, useMemo } from 'react'
+import FocusableButtonGroup from './FocusableButtonGroup'
+import { useFocusTrap, useAutoFocus, useNumberKeySelect } from '../utils/focusManager'
 
 /**
  * Objection Modal — triggered when an investigator raises a concern during teaching.
@@ -7,6 +9,22 @@ import { useState, useCallback } from 'react'
 export default function ObjectionModal({ investigator, objection, onResolve }) {
   const [selectedOption, setSelectedOption] = useState(null)
   const [showResult, setShowResult] = useState(false)
+
+  const containerRef = useRef(null)
+  const continueBtnRef = useRef(null)
+  useFocusTrap(containerRef, true)
+  useAutoFocus(continueBtnRef, showResult)
+
+  const optionButtons = useMemo(() =>
+    objection.options.map((opt, i) => ({ id: `opt-${i}`, label: opt.text })),
+    [objection.options]
+  )
+
+  useNumberKeySelect(
+    objection.options.length,
+    (index) => handleChoice(objection.options[index], index),
+    !showResult
+  )
 
   // Replace {name} in the objection text
   const firstName = investigator.name.split(' ').pop()
@@ -38,7 +56,7 @@ export default function ObjectionModal({ investigator, objection, onResolve }) {
 
   return (
     <div data-overlay style={styles.overlay}>
-      <div style={styles.container}>
+      <div ref={containerRef} role="dialog" aria-modal="true" style={styles.container}>
         {/* Header */}
         <div style={styles.header}>
           <span className="pixel-font" style={styles.title}>OBJECTION</span>
@@ -57,15 +75,12 @@ export default function ObjectionModal({ investigator, objection, onResolve }) {
         {/* Options */}
         {!showResult && (
           <div style={styles.options}>
-            {objection.options.map((opt, i) => (
-              <button
-                key={i}
-                onClick={() => handleChoice(opt, i)}
-                style={styles.optionBtn}
-              >
-                <span style={styles.optionText}>{opt.text}</span>
-              </button>
-            ))}
+            <FocusableButtonGroup
+              buttons={optionButtons}
+              onSelect={(index) => handleChoice(objection.options[index], index)}
+              orientation="vertical"
+              autoFocus
+            />
           </div>
         )}
 
@@ -104,7 +119,7 @@ export default function ObjectionModal({ investigator, objection, onResolve }) {
               )}
             </div>
 
-            <button className="primary" onClick={handleContinue} style={styles.continueBtn}>
+            <button ref={continueBtnRef} className="primary" onClick={handleContinue} style={styles.continueBtn}>
               <span className="pixel-font">Continue</span>
             </button>
           </div>

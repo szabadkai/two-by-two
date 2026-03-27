@@ -13,9 +13,20 @@ export default function InvestigatorCard({ investigator, onClick }) {
     }
   }
 
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      handleClick()
+    }
+  }
+
   return (
     <div
       className="panel"
+      data-card
+      tabIndex={0}
+      role="button"
+      aria-expanded={expanded}
       style={{
         ...styles.container,
         opacity: isActive ? 1 : 0.4,
@@ -23,6 +34,7 @@ export default function InvestigatorCard({ investigator, onClick }) {
         border: hovered ? '1px solid var(--accent)' : '1px solid transparent',
       }}
       onClick={handleClick}
+      onKeyDown={handleKeyDown}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >

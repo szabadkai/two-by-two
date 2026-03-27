@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useGameStore } from '../store/gameStore'
+import { useAutoFocus } from '../utils/focusManager'
 import TypingDrill from '../components/minigames/TypingDrill'
 import TeachingCards from '../components/minigames/TeachingCards'
 
@@ -66,6 +67,8 @@ function TypewriterBlock({ lines, lineIndex, onLineDone, onAllDone }) {
 function StepArrival({ onNext }) {
   const [lineIndex, setLineIndex] = useState(0)
   const [showButton, setShowButton] = useState(false)
+  const btnRef = useRef(null)
+  useAutoFocus(btnRef, showButton)
 
   const lines = [
     'The Missionary Training Center. Provo, Utah.',
@@ -82,12 +85,19 @@ function StepArrival({ onNext }) {
       <div className="fade-in" style={styles.content}>
         <span className="pixel-font" style={styles.stepLabel}>MTC — DAY 1</span>
 
-        <TypewriterBlock
-          lines={lines}
-          lineIndex={lineIndex}
-          onLineDone={() => setLineIndex(i => i + 1)}
-          onAllDone={() => setShowButton(true)}
-        />
+        <div tabIndex={0} onKeyDown={(e) => {
+          if (e.key === ' ' || e.key === 'Enter') {
+            e.preventDefault()
+            e.currentTarget.querySelector('p')?.click()
+          }
+        }} style={{ outline: 'none' }}>
+          <TypewriterBlock
+            lines={lines}
+            lineIndex={lineIndex}
+            onLineDone={() => setLineIndex(i => i + 1)}
+            onAllDone={() => setShowButton(true)}
+          />
+        </div>
 
         {showCompanionCard && (
           <div className="fade-in" style={styles.companionCard}>
@@ -107,7 +117,7 @@ function StepArrival({ onNext }) {
         )}
 
         {showButton && (
-          <button className="primary fade-in" style={styles.nextBtn} onClick={onNext}>
+          <button ref={btnRef} className="primary fade-in" style={styles.nextBtn} onClick={onNext}>
             <span className="pixel-font">Next</span>
           </button>
         )}
@@ -121,6 +131,8 @@ function StepLanguage({ onNext }) {
   const [phase, setPhase] = useState('intro') // 'intro' | 'minigame' | 'outro'
   const [lineIndex, setLineIndex] = useState(0)
   const [showButton, setShowButton] = useState(false)
+  const btnRef = useRef(null)
+  useAutoFocus(btnRef, showButton)
 
   const introLines = ["Your first Hungarian lesson. Don't panic."]
   const outroLines = [
@@ -141,12 +153,19 @@ function StepLanguage({ onNext }) {
         <span className="pixel-font" style={styles.stepLabel}>MTC — WEEK 2</span>
 
         {phase === 'intro' && (
-          <TypewriterBlock
-            lines={introLines}
-            lineIndex={lineIndex}
-            onLineDone={() => setLineIndex(i => i + 1)}
-            onAllDone={handleIntrosDone}
-          />
+          <div tabIndex={0} onKeyDown={(e) => {
+            if (e.key === ' ' || e.key === 'Enter') {
+              e.preventDefault()
+              e.currentTarget.querySelector('p')?.click()
+            }
+          }} style={{ outline: 'none' }}>
+            <TypewriterBlock
+              lines={introLines}
+              lineIndex={lineIndex}
+              onLineDone={() => setLineIndex(i => i + 1)}
+              onAllDone={handleIntrosDone}
+            />
+          </div>
         )}
 
         {phase === 'minigame' && (
@@ -161,16 +180,23 @@ function StepLanguage({ onNext }) {
         )}
 
         {phase === 'outro' && (
-          <TypewriterBlock
-            lines={outroLines}
-            lineIndex={lineIndex}
-            onLineDone={() => setLineIndex(i => i + 1)}
-            onAllDone={() => setShowButton(true)}
-          />
+          <div tabIndex={0} onKeyDown={(e) => {
+            if (e.key === ' ' || e.key === 'Enter') {
+              e.preventDefault()
+              e.currentTarget.querySelector('p')?.click()
+            }
+          }} style={{ outline: 'none' }}>
+            <TypewriterBlock
+              lines={outroLines}
+              lineIndex={lineIndex}
+              onLineDone={() => setLineIndex(i => i + 1)}
+              onAllDone={() => setShowButton(true)}
+            />
+          </div>
         )}
 
         {showButton && (
-          <button className="primary fade-in" style={styles.nextBtn} onClick={onNext}>
+          <button ref={btnRef} className="primary fade-in" style={styles.nextBtn} onClick={onNext}>
             <span className="pixel-font">Next</span>
           </button>
         )}
@@ -184,6 +210,8 @@ function StepTeaching({ onNext }) {
   const [phase, setPhase] = useState('intro') // 'intro' | 'minigame' | 'outro'
   const [lineIndex, setLineIndex] = useState(0)
   const [showButton, setShowButton] = useState(false)
+  const btnRef = useRef(null)
+  useAutoFocus(btnRef, showButton)
 
   const introLines = ['Time to practice teaching. An actor plays an investigator with a concern.']
   const outroLines = [
@@ -204,12 +232,19 @@ function StepTeaching({ onNext }) {
         <span className="pixel-font" style={styles.stepLabel}>MTC — WEEK 4</span>
 
         {phase === 'intro' && (
-          <TypewriterBlock
-            lines={introLines}
-            lineIndex={lineIndex}
-            onLineDone={() => setLineIndex(i => i + 1)}
-            onAllDone={handleIntrosDone}
-          />
+          <div tabIndex={0} onKeyDown={(e) => {
+            if (e.key === ' ' || e.key === 'Enter') {
+              e.preventDefault()
+              e.currentTarget.querySelector('p')?.click()
+            }
+          }} style={{ outline: 'none' }}>
+            <TypewriterBlock
+              lines={introLines}
+              lineIndex={lineIndex}
+              onLineDone={() => setLineIndex(i => i + 1)}
+              onAllDone={handleIntrosDone}
+            />
+          </div>
         )}
 
         {phase === 'minigame' && (
@@ -224,16 +259,23 @@ function StepTeaching({ onNext }) {
         )}
 
         {phase === 'outro' && (
-          <TypewriterBlock
-            lines={outroLines}
-            lineIndex={lineIndex}
-            onLineDone={() => setLineIndex(i => i + 1)}
-            onAllDone={() => setShowButton(true)}
-          />
+          <div tabIndex={0} onKeyDown={(e) => {
+            if (e.key === ' ' || e.key === 'Enter') {
+              e.preventDefault()
+              e.currentTarget.querySelector('p')?.click()
+            }
+          }} style={{ outline: 'none' }}>
+            <TypewriterBlock
+              lines={outroLines}
+              lineIndex={lineIndex}
+              onLineDone={() => setLineIndex(i => i + 1)}
+              onAllDone={() => setShowButton(true)}
+            />
+          </div>
         )}
 
         {showButton && (
-          <button className="primary fade-in" style={styles.nextBtn} onClick={onNext}>
+          <button ref={btnRef} className="primary fade-in" style={styles.nextBtn} onClick={onNext}>
             <span className="pixel-font">Next</span>
           </button>
         )}
@@ -246,6 +288,8 @@ function StepTeaching({ onNext }) {
 function StepAssignment({ onBegin }) {
   const [lineIndex, setLineIndex] = useState(0)
   const [showButton, setShowButton] = useState(false)
+  const btnRef = useRef(null)
+  useAutoFocus(btnRef, showButton)
 
   const lines = [
     'You have 104 weeks. Every day, you choose how to spend your morning, afternoon, and evening.',
@@ -271,12 +315,19 @@ function StepAssignment({ onBegin }) {
           </span>
         </div>
 
-        <TypewriterBlock
-          lines={lines}
-          lineIndex={lineIndex}
-          onLineDone={() => setLineIndex(i => i + 1)}
-          onAllDone={() => setShowButton(true)}
-        />
+        <div tabIndex={0} onKeyDown={(e) => {
+          if (e.key === ' ' || e.key === 'Enter') {
+            e.preventDefault()
+            e.currentTarget.querySelector('p')?.click()
+          }
+        }} style={{ outline: 'none' }}>
+          <TypewriterBlock
+            lines={lines}
+            lineIndex={lineIndex}
+            onLineDone={() => setLineIndex(i => i + 1)}
+            onAllDone={() => setShowButton(true)}
+          />
+        </div>
 
         {lineIndex >= 1 && (
           <div className="fade-in" style={styles.statsGrid}>
@@ -292,7 +343,7 @@ function StepAssignment({ onBegin }) {
         )}
 
         {showButton && (
-          <button className="primary fade-in" style={styles.beginBtn} onClick={onBegin}>
+          <button ref={btnRef} className="primary fade-in" style={styles.beginBtn} onClick={onBegin}>
             <span className="pixel-font">Begin Mission</span>
           </button>
         )}

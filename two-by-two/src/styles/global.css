@@ -247,3 +247,39 @@ button:disabled:hover {
     grid-template-columns: repeat(2, 1fr) !important;
   }
 }
+
+/* ============================================================
+   TOUCH DEVICE SUPPORT
+   ============================================================ */
+
+/* Hide touch controls on non-touch devices */
+.touch-controls {
+  display: none;
+}
+
+@media (pointer: coarse) {
+  .touch-controls {
+    display: flex !important;
+  }
+
+  /* Ensure minimum touch targets */
+  button,
+  [role="button"],
+  [role="option"] {
+    min-height: 44px;
+  }
+
+  /* Increase padding on small buttons */
+  .focusable-button-group__button {
+    padding: 0.75rem 1rem;
+    font-size: 14px;
+  }
+}
+
+/* Small screen responsive fixes — also show touch controls on narrow viewports */
+@media (max-width: 720px) {
+  .touch-controls {
+    display: flex !important;
+    padding: 8px 16px;
+  }
+}

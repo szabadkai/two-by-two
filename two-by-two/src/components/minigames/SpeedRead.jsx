@@ -1,5 +1,7 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { SCRIPTURE_PASSAGES } from '../../data/minigameData'
+import FocusableButtonGroup from '../FocusableButtonGroup'
+import { useAutoFocus, useNumberKeySelect } from '../../utils/focusManager'
 
 /**
  * Personal Study Minigame: Read a scripture passage, then answer comprehension questions.
@@ -32,6 +34,9 @@ export default function SpeedRead({ difficulty, onScore, finishEarly, isActive }
     onScore(correct, total)
   }, [correct, total, onScore])
 
+  const readyBtnRef = useRef(null)
+  useAutoFocus(readyBtnRef, phase === 'reading')
+
   const skipToQuestions = useCallback(() => {
     setPhase('questions')
   }, [])
@@ -59,6 +64,12 @@ export default function SpeedRead({ difficulty, onScore, finishEarly, isActive }
     }, 800)
   }, [isActive, feedback, currentQ, questionIndex, total, correct, finishEarly])
 
+  useNumberKeySelect(
+    currentQ ? currentQ.options.length : 0,
+    (index) => handleAnswer(currentQ.options[index]),
+    isActive && phase === 'questions' && !feedback
+  )
+
   return (
     <div style={styles.container}>
       {phase === 'reading' && (
@@ -75,7 +86,7 @@ export default function SpeedRead({ difficulty, onScore, finishEarly, isActive }
           <div style={styles.passage}>
             <p style={styles.passageText}>{passage.text}</p>
           </div>
-          <button onClick={skipToQuestions} style={styles.skipBtn}>
+          <button ref={readyBtnRef} onClick={skipToQuestions} style={styles.skipBtn}>
             <span className="pixel-font">I'm ready — ask me</span>
           </button>
         </>
@@ -95,15 +106,12 @@ export default function SpeedRead({ difficulty, onScore, finishEarly, isActive }
 
           {!feedback && (
             <div style={styles.answers}>
-              {currentQ.options.map((opt) => (
-                <button
-                  key={opt}
-                  onClick={() => handleAnswer(opt)}
-                  style={styles.answerBtn}
-                >
-                  {opt}
-                </button>
-              ))}
+              <FocusableButtonGroup
+                buttons={currentQ.options.map((opt, i) => ({ id: `ans-${i}`, label: opt }))}
+                onSelect={(index) => handleAnswer(currentQ.options[index])}
+                orientation="horizontal"
+                autoFocus
+              />
             </div>
           )}
 

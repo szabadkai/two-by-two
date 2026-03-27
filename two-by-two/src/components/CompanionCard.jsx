@@ -22,7 +22,7 @@ export default function CompanionCard({ companion }) {
   }
 
   return (
-    <div className="panel" style={styles.container}>
+    <div className="panel" data-card tabIndex={0} style={styles.container}>
       <div style={styles.header}>
         <div style={styles.portrait}>
           <div style={styles.portraitPlaceholder}>
