@@ -20,6 +20,17 @@ export default function EventModal() {
     [pendingEvent]
   )
 
+  const handleChoice = useCallback((index) => {
+    setChosenIndex(index)
+    resolveEventChoice(index)
+    setPhase('outcome')
+  }, [resolveEventChoice])
+
+  const handleContinue = useCallback(() => {
+    setPhase('choosing')
+    setChosenIndex(null)
+  }, [])
+
   useNumberKeySelect(
     pendingEvent?.choices?.length || 0,
     handleChoice,
@@ -27,17 +38,6 @@ export default function EventModal() {
   )
 
   if (!pendingEvent) return null
-
-  const handleChoice = (index) => {
-    setChosenIndex(index)
-    resolveEventChoice(index)
-    setPhase('outcome')
-  }
-
-  const handleContinue = () => {
-    setPhase('choosing')
-    setChosenIndex(null)
-  }
 
   const eventResult = lastDayResult?.eventResult
 

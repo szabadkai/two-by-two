@@ -24,20 +24,20 @@ jobs:
         with:
           node-version: 20
           cache: npm
-          cache-dependency-path: two-by-two/package-lock.json
+          cache-dependency-path: two-by-two-mobile/package-lock.json
 
       - name: Install dependencies
-        working-directory: two-by-two
+        working-directory: two-by-two-mobile
         run: npm ci
 
       - name: Build
-        working-directory: two-by-two
+        working-directory: two-by-two-mobile
         run: npm run build
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: two-by-two/dist
+          path: two-by-two-mobile/dist
 
   deploy:
     environment:

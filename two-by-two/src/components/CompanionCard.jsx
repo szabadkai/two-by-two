@@ -1,9 +1,12 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { getCompanionMood, getCompanionQuote } from '../engine/companionEngine'
+import PixelPortrait from './PixelPortrait'
+import { getCompanionPortrait } from '../data/portraits'
 
 export default function CompanionCard({ companion }) {
   const [quote, setQuote] = useState('')
   const mood = getCompanionMood(companion.rapport)
+  const portraitData = useMemo(() => getCompanionPortrait(companion), [companion.id, companion.name])
 
   useEffect(() => {
     setQuote(getCompanionQuote(companion))
@@ -25,11 +28,7 @@ export default function CompanionCard({ companion }) {
     <div className="panel" data-card tabIndex={0} style={styles.container}>
       <div style={styles.header}>
         <div style={styles.portrait}>
-          <div style={styles.portraitPlaceholder}>
-            <span style={styles.portraitInitials}>
-              {companion.name.split(' ').pop().charAt(0)}
-            </span>
-          </div>
+          <PixelPortrait data={portraitData} size={40} />
         </div>
         <div style={styles.info}>
           <div className="pixel-font" style={styles.name}>{companion.name}</div>

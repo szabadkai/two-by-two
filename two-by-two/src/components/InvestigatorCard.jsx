@@ -1,10 +1,13 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { INVESTIGATOR_STAGES } from '../data/investigators'
+import PixelPortrait from './PixelPortrait'
+import { getInvestigatorPortrait } from '../data/portraits'
 
 export default function InvestigatorCard({ investigator, onClick }) {
   const { name, personality, stage, warmth, isActive, description } = investigator
   const [hovered, setHovered] = useState(false)
   const [expanded, setExpanded] = useState(false)
+  const portraitData = useMemo(() => getInvestigatorPortrait(investigator), [name, personality])
 
   const handleClick = () => {
     if (onClick) onClick(investigator)
@@ -39,6 +42,9 @@ export default function InvestigatorCard({ investigator, onClick }) {
       onMouseLeave={() => setHovered(false)}
     >
       <div style={styles.header}>
+        <div style={styles.portrait}>
+          <PixelPortrait data={portraitData} size={32} />
+        </div>
         <div style={styles.info}>
           <span className="pixel-font" style={styles.name}>{name}</span>
           <span style={styles.personality}>{personality}</span>
@@ -107,13 +113,17 @@ const styles = {
   },
   header: {
     display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    gap: '8px',
+    alignItems: 'center',
+  },
+  portrait: {
+    flexShrink: 0,
   },
   info: {
     display: 'flex',
     flexDirection: 'column',
     gap: '1px',
+    flex: 1,
   },
   name: {
     fontSize: '11px',

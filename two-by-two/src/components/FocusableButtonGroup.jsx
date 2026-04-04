@@ -39,7 +39,7 @@ const FocusableButtonGroup = React.forwardRef(
       orientation = 'vertical',
       className = '',
       containerRole = 'group',
-      buttonRole = 'option',
+      buttonRole = 'button',
       disabled = false,
       autoFocus = true,
     },
@@ -118,7 +118,7 @@ const FocusableButtonGroup = React.forwardRef(
             onFocus={() => setFocusedIndex(index)}
             aria-label={button.ariaLabel || button.label}
             role={buttonRole}
-            aria-selected={focusedIndex === index}
+            {...(['option', 'tab'].includes(buttonRole) ? { 'aria-selected': focusedIndex === index } : {})}
             disabled={disabled}
             data-testid={`button-${index}`}
             type="button"
