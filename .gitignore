@@ -4,3 +4,5 @@ node_modules
 dist
 .graphite
 .history.vite/
+.history/
+.vite/

@@ -6,6 +6,7 @@ import StatRow from '../components/StatRow'
 import CompanionBanner from '../components/CompanionBanner'
 import ActivityCard from '../components/ActivityCard'
 import MinigameLauncher from '../components/MinigameLauncher'
+import PixelIcon from '../components/PixelIcon'
 
 export default function PDayView() {
   const week = useGameStore((s) => s.week)
@@ -104,7 +105,7 @@ export default function PDayView() {
         onClick={() => useGameStore.getState().openPhone()}
         aria-label="Open Phone"
       >
-        📞
+        <PixelIcon name="phone" size={24} color="#fff" />
       </button>
 
       <div className="bottom-bar">

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import MinigameWrapper from './MinigameWrapper'
 import FlashCards from './minigames/FlashCards'
 import ScriptureQuiz from './minigames/ScriptureQuiz'
+import PixelIcon from './PixelIcon'
 import { useGameStore } from '../store/gameStore'
 import { getDifficulty, getMinigameDuration } from '../engine/minigameEngine'
 
@@ -88,7 +89,7 @@ export default function FreeStudyButton() {
         onClick={() => setShowPicker(true)}
         aria-label="Free Study"
       >
-        📚
+        <PixelIcon name="book" size={24} color="#fff" />
       </button>
 
       {/* Picker bottom sheet */}

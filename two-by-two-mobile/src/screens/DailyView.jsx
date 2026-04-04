@@ -7,6 +7,7 @@ import StatRow from '../components/StatRow'
 import CompanionBanner from '../components/CompanionBanner'
 import MinigameLauncher from '../components/MinigameLauncher'
 import FreeStudyButton from '../components/FreeStudyButton'
+import PixelIcon from '../components/PixelIcon'
 import GameCanvas from '../components/GameCanvas'
 
 export default function DailyView() {
@@ -213,7 +214,7 @@ export default function DailyView() {
         onClick={() => useGameStore.getState().openPhone()}
         aria-label="Open Phone"
       >
-        📞
+        <PixelIcon name="phone" size={24} color="#fff" />
       </button>
 
       {/* Free Study FAB */}
