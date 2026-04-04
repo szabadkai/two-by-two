@@ -132,6 +132,16 @@ export function canvasToTile(touchX, touchY, camera) {
 }
 
 /**
+ * Get tile ID at a position, clamping to map edges for out-of-bounds.
+ * Repeats edge tiles instead of showing black void.
+ */
+function getEdgeClampedTileId(map, x, y, layer = 'ground') {
+  const cx = Math.max(0, Math.min(x, map.width - 1))
+  const cy = Math.max(0, Math.min(y, map.height - 1))
+  return map[layer][cy][cx]
+}
+
+/**
  * Render the map
  */
 export function renderMap(ctx, map, camera, canvasW, canvasH, timeOfDay = 'morning') {
@@ -141,15 +151,16 @@ export function renderMap(ctx, map, camera, canvasW, canvasH, timeOfDay = 'morni
   ctx.fillStyle = '#0e0c0a'
   ctx.fillRect(0, 0, canvasW, canvasH)
 
-  const startCol = Math.max(0, Math.floor(camera.x / st))
-  const startRow = Math.max(0, Math.floor(camera.y / st))
-  const endCol = Math.min(map.width, startCol + Math.ceil(canvasW / st) + 2)
-  const endRow = Math.min(map.height, startRow + Math.ceil(canvasH / st) + 2)
+  // Render range extends beyond map bounds — edge tiles fill the viewport
+  const startCol = Math.floor(camera.x / st)
+  const startRow = Math.floor(camera.y / st)
+  const endCol = startCol + Math.ceil(canvasW / st) + 2
+  const endRow = startRow + Math.ceil(canvasH / st) + 2
 
-  // Ground layer
+  // Ground layer — edge-clamped so no black borders appear
   for (let y = startRow; y < endRow; y++) {
     for (let x = startCol; x < endCol; x++) {
-      const tileId = map.ground[y][x]
+      const tileId = getEdgeClampedTileId(map, x, y, 'ground')
       const tile = TILES[tileId]
       if (!tile) continue
 
@@ -159,21 +170,25 @@ export function renderMap(ctx, map, camera, canvasW, canvasH, timeOfDay = 'morni
       ctx.fillStyle = tile.color
       ctx.fillRect(sx, sy, st, st)
 
+      // Clamped coords for deterministic decoration seeding
+      const px = Math.max(0, Math.min(x, map.width - 1))
+      const py = Math.max(0, Math.min(y, map.height - 1))
+
       if (tile.name === 'grass') {
         ctx.fillStyle = '#354525'
         for (let i = 0; i < 3; i++) {
-          const gx = sx + ((x * 7 + y * 13 + i * 5) % 14) * s
-          const gy = sy + ((x * 11 + y * 3 + i * 7) % 12) * s
+          const gx = sx + ((px * 7 + py * 13 + i * 5) % 14) * s
+          const gy = sy + ((px * 11 + py * 3 + i * 7) % 12) * s
           ctx.fillRect(gx, gy, s, 2 * s)
         }
       } else if (tile.name === 'cobblestone') {
         ctx.fillStyle = '#3e3830'
-        const cx = ((x + y) % 3) * 5
+        const cx = ((px + py) % 3) * 5
         ctx.fillRect(sx + cx * s, sy + 3 * s, 6 * s, 1)
         ctx.fillRect(sx + (cx + 8) * s, sy + 10 * s, 5 * s, 1)
       } else if (tile.name === 'water') {
         ctx.fillStyle = '#1a3050'
-        const wx = ((x * 3 + y * 7) % 8) * s
+        const wx = ((px * 3 + py * 7) % 8) * s
         ctx.fillRect(sx + wx, sy + 6 * s, 8 * s, 2 * s)
       }
 
@@ -182,9 +197,14 @@ export function renderMap(ctx, map, camera, canvasW, canvasH, timeOfDay = 'morni
     }
   }
 
-  // Object layer
-  for (let y = startRow; y < endRow; y++) {
-    for (let x = startCol; x < endCol; x++) {
+  // Object layer — only within actual map bounds (don't clone objects to edges)
+  const objStartCol = Math.max(0, Math.floor(camera.x / st))
+  const objStartRow = Math.max(0, Math.floor(camera.y / st))
+  const objEndCol = Math.min(map.width, objStartCol + Math.ceil(canvasW / st) + 2)
+  const objEndRow = Math.min(map.height, objStartRow + Math.ceil(canvasH / st) + 2)
+
+  for (let y = objStartRow; y < objEndRow; y++) {
+    for (let x = objStartCol; x < objEndCol; x++) {
       const objId = map.objects[y][x]
       if (!objId) continue
       const tile = TILES[objId]
