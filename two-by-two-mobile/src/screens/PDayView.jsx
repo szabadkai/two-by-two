@@ -98,6 +98,15 @@ export default function PDayView() {
         </div>
       </div>
 
+      {/* Phone FAB */}
+      <button
+        className="phone-fab"
+        onClick={() => useGameStore.getState().openPhone()}
+        aria-label="Open Phone"
+      >
+        📞
+      </button>
+
       <div className="bottom-bar">
         <button
           className="btn btn-primary"

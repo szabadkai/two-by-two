@@ -1690,3 +1690,263 @@ body {
 .free-study-fab:active {
   transform: scale(0.9);
 }
+
+/* ── Phone FAB ── */
+.phone-fab {
+  position: fixed;
+  bottom: calc(var(--safe-bottom) + 72px);
+  left: var(--space-md);
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--stat-spirit);
+  border: 2px solid var(--bg);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 50;
+  transition: transform 0.15s var(--ease-spring);
+}
+.phone-fab:active {
+  transform: scale(0.9);
+}
+
+/* ══════════════════════════════════════════
+   Phone / Contact List Screen
+   ══════════════════════════════════════════ */
+
+.phone-screen {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--bg);
+}
+
+.phone-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: calc(var(--safe-top) + var(--space-sm)) var(--space-md) var(--space-sm);
+  background: var(--bg-raised);
+  border-bottom: 1px solid var(--border);
+}
+
+.phone-title {
+  font-family: var(--font-pixel);
+  font-size: 0.875rem;
+  color: var(--accent);
+  letter-spacing: 1px;
+}
+
+.calls-badge {
+  font-family: var(--font-pixel);
+  font-size: 0.625rem;
+  color: var(--stat-spirit);
+  background: rgba(91, 142, 190, 0.15);
+  border: 1px solid var(--stat-spirit);
+  border-radius: 12px;
+  padding: 4px 10px;
+  letter-spacing: 1px;
+}
+
+/* ── Phone Tabs ── */
+.phone-tabs {
+  display: flex;
+  gap: 2px;
+  padding: var(--space-xs) var(--space-md);
+  background: var(--bg-raised);
+  border-bottom: 1px solid var(--border);
+}
+
+.phone-tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: var(--space-xs) var(--space-xs);
+  min-height: 44px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s var(--ease-out);
+  font-family: var(--font-body);
+}
+
+.phone-tab.active {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.phone-tab-icon {
+  font-size: 1.125rem;
+}
+
+.phone-tab-label {
+  font-family: var(--font-pixel);
+  font-size: 0.5rem;
+  letter-spacing: 0.5px;
+}
+
+/* ── Quote Bubble ── */
+.quote-bubble {
+  margin: var(--space-sm) var(--space-md);
+  padding: var(--space-sm) var(--space-md);
+  background: var(--accent-soft);
+  border: 1px solid var(--accent);
+  border-radius: 12px;
+  color: var(--text);
+  font-size: 0.9rem;
+  font-style: italic;
+  line-height: 1.4;
+  animation: slideUp 0.2s var(--ease-spring);
+  cursor: pointer;
+}
+
+/* ── Contact List ── */
+.phone-list {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: var(--space-sm) var(--space-md);
+  padding-bottom: calc(var(--safe-bottom) + var(--space-xl));
+}
+
+.phone-list::-webkit-scrollbar {
+  display: none;
+}
+
+.contact-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  padding: var(--space-sm) 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.contact-card:last-child {
+  border-bottom: none;
+}
+
+.contact-info {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex: 1;
+  min-width: 0;
+}
+
+.contact-stage {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-pixel);
+  font-size: 0.625rem;
+  background: var(--accent-soft);
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  flex-shrink: 0;
+}
+
+.contact-icon {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.contact-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.contact-name {
+  font-family: var(--font-pixel);
+  font-size: 0.625rem;
+  color: var(--text);
+}
+
+.contact-sub {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.contact-desc {
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  line-height: 1.3;
+  margin-top: 2px;
+}
+
+.contact-warmth {
+  margin-top: 4px;
+}
+
+/* ── Call Buttons ── */
+.contact-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.call-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 2px solid var(--stat-spirit);
+  background: rgba(91, 142, 190, 0.1);
+  color: var(--stat-spirit);
+  font-size: 1.125rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s var(--ease-out);
+}
+
+.call-btn:active {
+  transform: scale(0.9);
+  background: rgba(91, 142, 190, 0.25);
+}
+
+.call-btn:disabled {
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+.call-btn.invite-btn {
+  border-color: var(--stat-rapport);
+  background: rgba(91, 190, 181, 0.1);
+  color: var(--stat-rapport);
+}
+
+.call-btn.invite-btn:active {
+  background: rgba(91, 190, 181, 0.25);
+}
+
+/* ── Phone Empty State ── */
+.phone-empty {
+  text-align: center;
+  color: var(--text-muted);
+  padding: var(--space-xl) var(--space-md);
+  font-size: 0.9rem;
+}
+
+.phone-footer {
+  padding: var(--space-sm) var(--space-md);
+  padding-bottom: calc(var(--safe-bottom) + var(--space-sm));
+  border-top: 1px solid var(--border);
+  background: var(--bg-raised);
+}

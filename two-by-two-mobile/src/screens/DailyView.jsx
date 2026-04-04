@@ -24,6 +24,7 @@ export default function DailyView() {
   const stats = useGameStore((s) => s.stats)
   const minigameScores = useGameStore((s) => s.minigameScores)
   const setMinigameScore = useGameStore((s) => s.setMinigameScore)
+  const startTracting = useGameStore((s) => s.startTracting)
 
   const [activeSlot, setActiveSlot] = useState('morning')
   const [pendingMinigame, setPendingMinigame] = useState(null)
@@ -53,6 +54,12 @@ export default function DailyView() {
   const handleMapInteraction = useCallback((interaction) => {
     if (!interaction) return
 
+    // Tram stop → start tracting flow
+    if (interaction.type === 'tram') {
+      startTracting(activeSlot)
+      return
+    }
+
     const activityId = interaction.activity
     if (!activityId) return
 
@@ -78,7 +85,7 @@ export default function DailyView() {
     // Auto-advance to next empty slot
     const next = TIME_SLOTS.find((s) => s !== activeSlot && !schedule[s] && !isSlotLocked(s))
     if (next) setActiveSlot(next)
-  }, [activeSlot, schedule, investigators, setActivity, setMinigameScore, setVisitTarget])
+  }, [activeSlot, schedule, investigators, setActivity, setMinigameScore, setVisitTarget, startTracting])
 
   const handlePickInvestigator = (invId, activityId) => {
     setVisitTarget(invId)
@@ -199,6 +206,15 @@ export default function DailyView() {
           {allFilled ? 'End Day →' : `Fill ${TIME_SLOTS.filter(s => !schedule[s] && !isSlotLocked(s)).length} more slots`}
         </button>
       </div>
+
+      {/* Phone FAB */}
+      <button
+        className="phone-fab"
+        onClick={() => useGameStore.getState().openPhone()}
+        aria-label="Open Phone"
+      >
+        📞
+      </button>
 
       {/* Free Study FAB */}
       <FreeStudyButton />

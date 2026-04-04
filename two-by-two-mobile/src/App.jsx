@@ -7,6 +7,9 @@ import WeeklySummary from './screens/WeeklySummary'
 import TransferScreen from './screens/TransferScreen'
 import SentHomeScreen from './screens/SentHomeScreen'
 import EndgameScreen from './screens/EndgameScreen'
+import TractingScreen from './screens/TractingScreen'
+import SundayScreen from './screens/SundayScreen'
+import ContactListScreen from './screens/ContactListScreen'
 import EventModal from './components/EventModal'
 import ObjectionModal from './components/ObjectionModal'
 import ToastContainer from './components/ToastContainer'
@@ -26,6 +29,9 @@ function App() {
       case 'transfer': return <TransferScreen />
       case 'sent_home': return <SentHomeScreen />
       case 'endgame': return <EndgameScreen />
+      case 'tracting': return <TractingScreen />
+      case 'sunday': return <SundayScreen />
+      case 'phone': return <ContactListScreen />
       default: return <TitleScreen />
     }
   }

@@ -1,7 +1,9 @@
 import { create } from 'zustand'
-import { INITIAL_STATS, TOTAL_WEEKS, WEEKS_PER_TRANSFER, MONTHLY_STIPEND } from '../data/constants'
+import { INITIAL_STATS, TOTAL_WEEKS, WEEKS_PER_TRANSFER, MONTHLY_STIPEND, MAX_CALLS_PER_DAY, CALL_WARMTH_BOOST } from '../data/constants'
 import { getStartingCompanion } from '../data/companions'
 import { STARTING_INVESTIGATORS } from '../data/investigators'
+import { MEMBERS } from '../data/members'
+import { FAMILY, LEADERSHIP } from '../data/family'
 import { resolveDay } from '../engine/resolveDay'
 import { resolveEvent as resolveEventEngine } from '../engine/resolveEvent'
 import { advanceInvestigator, weeklyInvestigatorDecay, resolveObjection } from '../engine/investigatorEngine'
@@ -18,6 +20,14 @@ import {
 import { isTransferWeek } from '../engine/transferEngine'
 import { saveToLocalStorage, loadFromLocalStorage } from '../utils/saveLoad'
 import { MAPS, STARTING_MAP } from '../data/maps'
+import {
+  selectDistrict,
+  generateDoorEncounters,
+  resolveDoorKnock,
+  applyDoorStatDeltas,
+  summarizeTracting,
+  resolveSundayMeeting,
+} from '../engine/tractingEngine'
 
 const createInitialState = () => ({
   screen: 'title',
@@ -49,6 +59,20 @@ const createInitialState = () => ({
   lastDayResult: null,
   toasts: [],
   activeMinigame: null, // { slot, activityId } when a minigame is in progress
+  // Tracting state
+  tractingActive: false,
+  currentDistrict: null,
+  doorEncounters: [],      // [{ doorIndex, encounter, resolved, result }]
+  visitedDistricts: [],    // recent district IDs (last 3)
+  tractingReturnSlot: null, // which time slot triggered tracting
+  // Sunday meeting state
+  sundayAttendees: [],
+  sundayResolved: false,
+  // Phone / Contact List state
+  callsToday: 0,
+  callLog: [],           // contact IDs called today
+  churchInvites: [],     // investigator IDs invited to church this week
+  previousScreen: null,  // screen to return to from phone
   weekLog: {
     startStats: { ...INITIAL_STATS },
     startRapport: 5,
@@ -281,12 +305,13 @@ export const useGameStore = create((set, get) => ({
 
     if (nextDay === 6) {
       const mandatoryActivity = rollMandatoryActivity(state)
-      set({ day: 6, screen: 'pday', mandatoryActivity, mapId: STARTING_MAP })
+      set({ day: 6, screen: 'pday', mandatoryActivity, mapId: STARTING_MAP, callsToday: 0, callLog: [] })
     } else if (nextDay > 6) {
-      set({ screen: 'summary' })
+      // After P-Day → Sunday meeting
+      set({ screen: 'sunday', callsToday: 0, callLog: [] })
     } else {
       const mandatoryActivity = rollMandatoryActivity(state)
-      set({ day: nextDay, mandatoryActivity, mapId: STARTING_MAP })
+      set({ day: nextDay, mandatoryActivity, mapId: STARTING_MAP, callsToday: 0, callLog: [] })
     }
     setTimeout(() => get().autoSave(), 0)
   },
@@ -367,6 +392,9 @@ export const useGameStore = create((set, get) => ({
       warnings,
       debtWeeks,
       weekHadLanguageActivity: false,
+      callsToday: 0,
+      callLog: [],
+      churchInvites: [],
       stats: { ...state.stats, language: newLanguage, budget: stipendBudget },
       schedule: { morning: null, afternoon: null, evening: null },
       minigameScores: { morning: null, afternoon: null, evening: null },
@@ -469,4 +497,242 @@ export const useGameStore = create((set, get) => ({
   },
 
   goToScreen: (screen) => set({ screen }),
+
+  // ── Phone / Contact List Actions ──
+
+  openPhone: () => {
+    const state = get()
+    set({ previousScreen: state.screen, screen: 'phone' })
+  },
+
+  closePhone: () => {
+    const state = get()
+    set({ screen: state.previousScreen || 'game', previousScreen: null })
+  },
+
+  makeCall: (contactType, contactId) => {
+    const state = get()
+    if (state.callsToday >= MAX_CALLS_PER_DAY) return
+    if (state.callLog.includes(contactId)) return
+
+    let effects = {}
+    let quote = ''
+
+    if (contactType === 'investigator') {
+      const inv = state.investigators.find((i) => i.id === contactId)
+      if (!inv || !inv.isActive) return
+      // Calling an investigator boosts warmth
+      set((s) => ({
+        investigators: s.investigators.map((i) =>
+          i.id === contactId
+            ? { ...i, warmth: Math.min(10, i.warmth + CALL_WARMTH_BOOST) }
+            : i
+        ),
+        callsToday: s.callsToday + 1,
+        callLog: [...s.callLog, contactId],
+      }))
+      get().addToast(`Called ${inv.name} — warmth +${CALL_WARMTH_BOOST}`, 'good')
+      return
+    }
+
+    if (contactType === 'member') {
+      const member = MEMBERS.find((m) => m.id === contactId)
+      if (!member) return
+      effects = member.callEffects
+      quote = member.callQuotes[Math.floor(Math.random() * member.callQuotes.length)]
+
+      // Check for referral
+      if (Math.random() < member.referralChance) {
+        const newInv = checkNewInvestigator('member_visit', state.investigators, state.stats)
+        if (newInv) {
+          set((s) => ({
+            investigators: [...s.investigators, newInv],
+            weekLog: {
+              ...s.weekLog,
+              investigatorChanges: [
+                ...s.weekLog.investigatorChanges,
+                `${member.name} referred ${newInv.name}!`,
+              ],
+            },
+          }))
+          get().addToast(`${member.name} referred ${newInv.name}!`, 'good')
+        }
+      }
+    }
+
+    if (contactType === 'family') {
+      const person = FAMILY.find((f) => f.id === contactId)
+      if (!person) return
+      effects = person.callEffects
+      quote = person.callQuotes[Math.floor(Math.random() * person.callQuotes.length)]
+    }
+
+    if (contactType === 'leadership') {
+      const leader = LEADERSHIP.find((l) => l.id === contactId)
+      if (!leader) return
+      effects = leader.callEffects
+      quote = leader.callQuotes[Math.floor(Math.random() * leader.callQuotes.length)]
+    }
+
+    // Apply stat effects
+    const newStats = { ...state.stats }
+    for (const [stat, delta] of Object.entries(effects)) {
+      if (newStats[stat] !== undefined) {
+        newStats[stat] = Math.max(0, Math.min(100, newStats[stat] + delta))
+      }
+    }
+
+    set((s) => ({
+      stats: newStats,
+      callsToday: s.callsToday + 1,
+      callLog: [...s.callLog, contactId],
+    }))
+
+    const effectText = Object.entries(effects)
+      .map(([s, d]) => `${s} +${d}`)
+      .join(', ')
+    get().addToast(effectText, 'good')
+
+    return quote
+  },
+
+  inviteToChurch: (investigatorId) => {
+    const state = get()
+    if (state.callsToday >= MAX_CALLS_PER_DAY) return
+    if (state.churchInvites.includes(investigatorId)) return
+
+    const inv = state.investigators.find((i) => i.id === investigatorId)
+    if (!inv || !inv.isActive) return
+
+    set((s) => ({
+      churchInvites: [...s.churchInvites, investigatorId],
+      callsToday: s.callsToday + 1,
+      callLog: [...s.callLog, investigatorId + '_invite'],
+    }))
+
+    get().addToast(`Invited ${inv.name} to church!`, 'good')
+  },
+
+  // ── Tracting Actions ──
+
+  startTracting: (slot) => {
+    const state = get()
+    const district = selectDistrict(state.visitedDistricts)
+    const encounters = generateDoorEncounters(district)
+
+    set({
+      tractingActive: true,
+      currentDistrict: district,
+      doorEncounters: encounters,
+      tractingReturnSlot: slot,
+      mapId: district.mapId,
+      screen: 'tracting',
+    })
+  },
+
+  resolveDoor: (doorIndex, choiceIndex) => {
+    const state = get()
+    const doorEntry = state.doorEncounters.find((d) => d.doorIndex === doorIndex)
+    if (!doorEntry || doorEntry.resolved) return
+
+    const result = resolveDoorKnock(doorEntry, choiceIndex, state.stats, state.investigators)
+    if (!result) return
+
+    // Apply stat deltas immediately
+    const newStats = applyDoorStatDeltas(state.stats, result.statDeltas)
+
+    // Add new investigator if contact was made
+    let investigators = [...state.investigators]
+    const investigatorChanges = []
+    if (result.newContact) {
+      investigators = [...investigators, result.newContact]
+      investigatorChanges.push(`New contact: ${result.newContact.name} (${result.newContact.personality})`)
+    }
+
+    // Update the door entry
+    const updatedEncounters = state.doorEncounters.map((d) =>
+      d.doorIndex === doorIndex
+        ? { ...d, resolved: true, result }
+        : d
+    )
+
+    set((s) => ({
+      stats: newStats,
+      investigators,
+      doorEncounters: updatedEncounters,
+      weekLog: {
+        ...s.weekLog,
+        investigatorChanges: [...s.weekLog.investigatorChanges, ...investigatorChanges],
+      },
+    }))
+
+    // Toast for new contacts
+    for (const change of investigatorChanges) {
+      get().addToast(change, 'good')
+    }
+  },
+
+  finishTracting: () => {
+    const state = get()
+    const { doorEncounters, currentDistrict, tractingReturnSlot } = state
+
+    const summary = summarizeTracting(doorEncounters, currentDistrict?.name || 'Unknown')
+
+    // Keep last 3 visited districts
+    const visitedDistricts = [
+      ...(state.visitedDistricts || []),
+      currentDistrict?.id,
+    ].slice(-3)
+
+    // Set the activity for the slot that triggered tracting
+    const schedule = { ...state.schedule }
+    if (tractingReturnSlot) {
+      schedule[tractingReturnSlot] = 'tracting'
+    }
+
+    set({
+      tractingActive: false,
+      currentDistrict: null,
+      doorEncounters: [],
+      tractingReturnSlot: null,
+      visitedDistricts,
+      mapId: STARTING_MAP,
+      screen: 'game',
+      schedule,
+    })
+
+    get().addToast(summary.summaryText, summary.contactsMade > 0 ? 'good' : 'info')
+    setTimeout(() => get().autoSave(), 0)
+  },
+
+  // ── Sunday Meeting ──
+
+  resolveSunday: () => {
+    const state = get()
+    const { attendees, spiritBonus, notifications, updatedInvestigators } = resolveSundayMeeting(state.investigators, state.churchInvites)
+
+    const newStats = { ...state.stats }
+    newStats.spirit = Math.min(100, newStats.spirit + spiritBonus)
+
+    set({
+      investigators: updatedInvestigators,
+      stats: newStats,
+      sundayAttendees: attendees,
+      sundayResolved: true,
+      weekLog: {
+        ...state.weekLog,
+        notifications: [...state.weekLog.notifications, ...notifications],
+      },
+    })
+
+    for (const note of notifications) {
+      get().addToast(note, note.includes('came') ? 'good' : 'info')
+    }
+  },
+
+  finishSunday: () => {
+    set({ sundayAttendees: [], sundayResolved: false })
+    // Move to weekly summary
+    set({ screen: 'summary' })
+  },
 }))

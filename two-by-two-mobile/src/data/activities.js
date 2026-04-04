@@ -81,6 +81,13 @@ export const ACTIVITIES = {
     effects: { skills: [1, 2], language: [0, 1], spirit: [0, 1] },
     special: 'advanceInvestigator',
   },
+  tracting: {
+    id: 'tracting',
+    label: 'Go Tracting',
+    description: 'Take the tram to a new district and knock doors. Challenges, danger, temptations — and maybe someone who needs to hear your message.',
+    effects: { spirit: [-1, 1], skills: [0, 1], language: [0, 1] },
+    special: 'tracting',
+  },
 }
 
 export const PDAY_ACTIVITIES = {

@@ -72,3 +72,8 @@ export const COMPANION_DEMAND_RAPPORT_PENALTY = 3
 // Member visit request expiry
 export const MEMBER_REQUEST_CHANCE = 0.15
 export const MEMBER_REQUEST_SPIRIT_PENALTY = 3
+
+// Phone / Contact List
+export const MAX_CALLS_PER_DAY = 2
+export const CALL_WARMTH_BOOST = 1
+export const CHURCH_INVITE_ATTENDANCE_BONUS = 0.2
