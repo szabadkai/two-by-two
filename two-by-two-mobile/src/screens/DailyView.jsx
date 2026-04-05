@@ -31,11 +31,11 @@ export default function DailyView() {
   const [pendingMinigame, setPendingMinigame] = useState(null)
   const [showInvestigatorPicker, setShowInvestigatorPicker] = useState(false)
 
-  const allFilled = TIME_SLOTS.every((s) => schedule[s] !== null)
-
   const isSlotLocked = (slot) => {
     return mandatoryActivity && mandatoryActivity.slot === slot && mandatoryActivity.accepted
   }
+
+  const allFilled = TIME_SLOTS.every((s) => schedule[s] !== null || isSlotLocked(s))
 
   const handleMinigameComplete = useCallback((score) => {
     if (pendingMinigame) {
