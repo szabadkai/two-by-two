@@ -4,7 +4,7 @@ import FlashCards from './minigames/FlashCards'
 import ScriptureQuiz from './minigames/ScriptureQuiz'
 import PixelIcon from './PixelIcon'
 import { useGameStore } from '../store/gameStore'
-import { getDifficulty, getMinigameDuration } from '../engine/minigameEngine'
+import { ACTIVITY_MINIGAME_MAP, getDifficulty, getMinigameDuration } from '../engine/minigameEngine'
 
 const FREE_GAMES = {
   language: {
@@ -59,7 +59,8 @@ export default function FreeStudyButton() {
     const game = FREE_GAMES[activeGame]
     const Component = game.component
     const difficulty = getDifficulty(game.activityId, stats)
-    const duration = getMinigameDuration(difficulty)
+    const mgType = ACTIVITY_MINIGAME_MAP[game.activityId]
+    const duration = getMinigameDuration(difficulty, mgType)
 
     return (
       <MinigameWrapper

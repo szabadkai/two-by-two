@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { SCRIPTURE_PASSAGES } from '../../data/minigameData'
+import { useGameStore } from '../../store/gameStore'
 
 function shuffleArray(arr) {
   const a = [...arr]
@@ -10,119 +11,140 @@ function shuffleArray(arr) {
   return a
 }
 
+/**
+ * Generates a flat list of question exercises from random passages.
+ * Higher difficulty → more questions pulled from more passages.
+ */
+function generateQuestions(difficulty, seenPassages = []) {
+  const numPassages = difficulty >= 3 ? 3 : 2
+  const seenSet = new Set(seenPassages)
+  // Sort unseen passages first, then shuffle within each group
+  const unseen = shuffleArray(SCRIPTURE_PASSAGES.filter((p) => !seenSet.has(p.ref)))
+  const seen = shuffleArray(SCRIPTURE_PASSAGES.filter((p) => seenSet.has(p.ref)))
+  const pool = [...unseen, ...seen].slice(0, numPassages)
+
+  const exercises = []
+  for (const passage of pool) {
+    const qs = shuffleArray([...passage.questions])
+    const take = Math.min(qs.length, difficulty >= 2 ? 3 : 2)
+    for (let i = 0; i < take; i++) {
+      exercises.push({
+        passage: passage.text,
+        ref: passage.ref,
+        question: qs[i].q,
+        answer: qs[i].a,
+        options: shuffleArray([...qs[i].options]),
+      })
+    }
+  }
+  return exercises
+}
+
 export default function ScriptureQuiz({ difficulty, onScore, finishEarly, isActive }) {
-  const readTime = Math.max(6, 10 - difficulty * 2)
-  const [passage] = useState(() => {
-    return shuffleArray([...SCRIPTURE_PASSAGES])[0]
-  })
-
-  const [phase, setPhase] = useState('read') // 'read' | 'quiz'
-  const [readTimer, setReadTimer] = useState(readTime)
-  const [questionIdx, setQuestionIdx] = useState(0)
+  const seenPassages = useGameStore((s) => s.seenPassages)
+  const markPassageSeen = useGameStore((s) => s.markPassageSeen)
+  const [exercises] = useState(() => generateQuestions(difficulty, seenPassages))
+  const total = exercises.length
+  const [idx, setIdx] = useState(0)
   const [correct, setCorrect] = useState(0)
+  const [streak, setStreak] = useState(0)
+  const [phase, setPhase] = useState('read') // 'read' | 'quiz' | 'feedback'
   const [selected, setSelected] = useState(null)
-  const [feedback, setFeedback] = useState(false)
-  const [shuffledOptions, setShuffledOptions] = useState([])
+  const [isCorrectAnswer, setIsCorrectAnswer] = useState(false)
+  const timer = useRef(null)
 
-  const totalQuestions = passage.questions.length
+  const ex = exercises[idx]
 
-  // Read phase countdown
+  // Auto-advance from read → quiz after 4s, or user can tap
   useEffect(() => {
     if (phase !== 'read' || !isActive) return
-    if (readTimer <= 0) {
-      setPhase('quiz')
-      return
-    }
-    const timer = setInterval(() => setReadTimer((t) => t - 1), 1000)
-    return () => clearInterval(timer)
-  }, [phase, readTimer, isActive])
+    const t = setTimeout(() => setPhase('quiz'), 4000)
+    return () => clearTimeout(t)
+  }, [phase, isActive, idx])
 
-  // Shuffle options when question changes
-  useEffect(() => {
-    if (phase === 'quiz' && passage.questions[questionIdx]) {
-      setShuffledOptions(shuffleArray([...passage.questions[questionIdx].options]))
-    }
-  }, [phase, questionIdx, passage.questions])
-
-  const handleReady = () => {
-    setPhase('quiz')
-  }
-
-  const handleTap = (answer) => {
-    if (feedback || !isActive || selected !== null) return
-    setSelected(answer)
-
-    const isCorrect = answer === passage.questions[questionIdx].a
-    const newCorrect = isCorrect ? correct + 1 : correct
+  const advance = useCallback((wasCorrect) => {
+    const newCorrect = wasCorrect ? correct + 1 : correct
+    const newStreak = wasCorrect ? streak + 1 : 0
     setCorrect(newCorrect)
-    setFeedback(true)
-    onScore(newCorrect, totalQuestions)
+    setStreak(newStreak)
+    setIsCorrectAnswer(wasCorrect)
+    setPhase('feedback')
+    onScore(newCorrect, total)
+    markPassageSeen(exercises[idx].ref)
 
-    setTimeout(() => {
-      const nextQ = questionIdx + 1
-      if (nextQ >= totalQuestions) {
-        finishEarly(newCorrect, totalQuestions)
+    timer.current = setTimeout(() => {
+      const next = idx + 1
+      if (next >= total) {
+        finishEarly(newCorrect, total)
       } else {
-        setQuestionIdx(nextQ)
+        setIdx(next)
+        setPhase('read')
         setSelected(null)
-        setFeedback(false)
       }
-    }, 800)
+    }, 700)
+  }, [correct, streak, idx, total, onScore, finishEarly, exercises, markPassageSeen])
+
+  useEffect(() => {
+    return () => { if (timer.current) clearTimeout(timer.current) }
+  }, [])
+
+  const handleTap = (option) => {
+    if (phase !== 'quiz' || !isActive || selected !== null) return
+    setSelected(option)
+    advance(option === ex.answer)
   }
+
+  if (!ex) return null
 
   return (
-    <div className="scripture-game">
-      {phase === 'read' && (
-        <>
-          <div className="scripture-passage">{passage.text}</div>
-          <div className="scripture-read-timer">
-            {readTimer > 0 ? `${readTimer}s to read` : 'Time\'s up!'}
-          </div>
-          <button
-            className="btn btn-primary"
-            style={{ width: '100%', marginTop: 'var(--space-md)' }}
-            onClick={handleReady}
-          >
-            I'm Ready
-          </button>
-        </>
+    <div className="scripture-drill">
+      {/* Progress bar */}
+      <div className="lang-progress-bar">
+        <div
+          className="lang-progress-fill scripture"
+          style={{ width: `${(idx / total) * 100}%` }}
+        />
+      </div>
+
+      {streak >= 2 && (
+        <div className="lang-streak">{streak} in a row!</div>
       )}
 
-      {phase === 'quiz' && passage.questions[questionIdx] && (
+      {/* Passage snippet — always visible so there's no slow read phase */}
+      <div className="scripture-passage-card" onClick={() => phase === 'read' && setPhase('quiz')}>
+        <div className="scripture-text">{ex.passage}</div>
+        <div className="scripture-ref">{ex.ref}</div>
+        {phase === 'read' && (
+          <div className="scripture-tap-hint">Tap when ready</div>
+        )}
+      </div>
+
+      {/* Question + options */}
+      {phase !== 'read' && (
         <>
-          <div className="mg-progress">
-            {Array.from({ length: totalQuestions }).map((_, i) => (
-              <div
-                key={i}
-                className={`mg-dot ${i < questionIdx ? 'done' : ''} ${i === questionIdx ? 'current' : ''}`}
-              />
-            ))}
-          </div>
-
-          <div className="scripture-question">
-            {passage.questions[questionIdx].q}
-          </div>
-
-          <div className="scripture-options">
-            {shuffledOptions.map((opt) => {
-              let cls = 'scripture-option'
-              if (feedback) {
-                if (opt === passage.questions[questionIdx].a) cls += ' correct'
+          <div className="scripture-question-text">{ex.question}</div>
+          <div className="lang-options">
+            {ex.options.map((opt) => {
+              let cls = 'lang-option'
+              if (phase === 'feedback') {
+                if (opt === ex.answer) cls += ' correct'
                 else if (opt === selected) cls += ' wrong'
               }
               return (
-                <button
-                  key={opt}
-                  className={cls}
-                  onClick={() => handleTap(opt)}
-                  disabled={feedback}
-                >
+                <button key={opt} className={cls} onClick={() => handleTap(opt)} disabled={phase === 'feedback'}>
                   {opt}
                 </button>
               )
             })}
           </div>
         </>
+      )}
+
+      {/* Feedback banner */}
+      {phase === 'feedback' && (
+        <div className={`lang-feedback ${isCorrectAnswer ? 'correct' : 'wrong'}`}>
+          {isCorrectAnswer ? 'Correct!' : `Answer: ${ex.answer}`}
+        </div>
       )}
     </div>
   )

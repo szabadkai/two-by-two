@@ -94,9 +94,17 @@ export function scaleEffects(activityId, score, isPDay = false) {
 }
 
 /**
- * Get minigame duration in seconds based on difficulty
+ * Get minigame duration in seconds based on difficulty and minigame type.
+ * Scripture quizzes get generous/no time limits for reading.
+ * 0 = no time limit (self-paced).
  */
-export function getMinigameDuration(difficulty) {
-  // Higher difficulty = slightly less time
-  return Math.max(10, 20 - difficulty * 2)
+export function getMinigameDuration(difficulty, minigameType) {
+  if (minigameType === 'scripture') {
+    if (difficulty <= 0) return 0          // beginners: no timer
+    if (difficulty <= 1) return 120         // 2 minutes
+    if (difficulty <= 2) return 60          // 1 minute
+    return Math.max(30, 50 - difficulty * 5) // 3-4: 35-30s
+  }
+  // Language / other minigames
+  return Math.max(25, 45 - difficulty * 4)
 }

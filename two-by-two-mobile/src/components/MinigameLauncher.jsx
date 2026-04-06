@@ -34,7 +34,7 @@ export default function MinigameLauncher({ activityId, stats, onComplete, onCanc
 
   const { component: MinigameComponent, title } = config
   const difficulty = getDifficulty(activityId, stats)
-  const duration = getMinigameDuration(difficulty)
+  const duration = getMinigameDuration(difficulty, minigameType)
 
   return (
     <MinigameWrapper

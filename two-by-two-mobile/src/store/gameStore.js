@@ -74,6 +74,9 @@ const createInitialState = () => ({
   callLog: [],           // contact IDs called today
   churchInvites: [],     // investigator IDs invited to church this week
   previousScreen: null,  // screen to return to from phone
+  // Mastery tracking (persists across whole mission)
+  wordMastery: {},       // { 'igen': 3, 'nem': 2, ... } 0=unseen, 1=seen, 2=learning, 3=mastered
+  seenPassages: [],      // array of passage ref strings
   weekLog: {
     startStats: { ...INITIAL_STATS },
     startRapport: 5,
@@ -126,6 +129,23 @@ export const useGameStore = create((set, get) => ({
   setMinigameScore: (slot, score) => {
     set((s) => ({
       minigameScores: { ...s.minigameScores, [slot]: score },
+    }))
+  },
+
+  updateWordMastery: (results) => {
+    set((s) => {
+      const m = { ...s.wordMastery }
+      for (const { hu, correct } of results) {
+        const cur = m[hu] || 0
+        m[hu] = correct ? Math.min(cur + 1, 3) : Math.max(cur === 0 ? 1 : cur - 1, 1)
+      }
+      return { wordMastery: m }
+    })
+  },
+
+  markPassageSeen: (ref) => {
+    set((s) => ({
+      seenPassages: s.seenPassages.includes(ref) ? s.seenPassages : [...s.seenPassages, ref],
     }))
   },
 

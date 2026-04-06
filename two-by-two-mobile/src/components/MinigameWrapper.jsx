@@ -65,15 +65,17 @@ export default function MinigameWrapper({
           )}
         </div>
 
-        <div className="mg-timer-row">
-          <div className="mg-timer-bar">
-            <div
-              className={`mg-timer-fill ${timerCls}`}
-              style={{ width: `${timerPct}%` }}
-            />
+        {duration > 0 && (
+          <div className="mg-timer-row">
+            <div className="mg-timer-bar">
+              <div
+                className={`mg-timer-fill ${timerCls}`}
+                style={{ width: `${timerPct}%` }}
+              />
+            </div>
+            <span className={`mg-timer-text ${timerCls}`}>{timeLeft}s</span>
           </div>
-          <span className={`mg-timer-text ${timerCls}`}>{timeLeft}s</span>
-        </div>
+        )}
 
         {/* Game area */}
         {!showResult && (

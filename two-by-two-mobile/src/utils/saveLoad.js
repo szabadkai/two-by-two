@@ -11,6 +11,7 @@ const STATE_FIELDS = [
   'sentHome', 'crisisWeeksRemaining',
   'leadership', 'companionHistory',
   'mandatoryActivity', 'lastDayResult', 'weekLog',
+  'wordMastery', 'seenPassages',
 ]
 
 export function exportSave(state) {
