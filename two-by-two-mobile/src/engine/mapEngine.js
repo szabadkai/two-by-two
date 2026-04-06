@@ -67,6 +67,15 @@ export function getInteractionAt(map, x, y) {
           prompt: 'Teach ' + npc.name + '?',
         }
       }
+      if (npc.type === 'member') {
+        return {
+          x: npc.x, y: npc.y,
+          type: 'member',
+          memberId: npc.memberId,
+          label: npc.name,
+          prompt: 'Talk to ' + npc.name + '?',
+        }
+      }
       return {
         x: npc.x, y: npc.y,
         type: 'activity',

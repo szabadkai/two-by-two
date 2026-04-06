@@ -1091,3 +1091,109 @@ export const EVENTS = [
     ],
   },
 ]
+
+/**
+ * Bishop dialogue events — triggered when the player interacts with the bishop's desk.
+ * Themed around ward coordination, missionary encouragement, and spiritual counsel.
+ */
+export const BISHOP_EVENTS = [
+  {
+    id: 'bishop_encouragement',
+    title: 'A Moment with the Bishop',
+    description: 'The branch president leans back in his chair. "Elderek. Sit down. Tell me — how is the work going? Really going." He folds his arms and waits. He actually wants to know.',
+    choices: [
+      {
+        label: 'Be honest about the struggles',
+        resultGood: {
+          text: 'He listens to every word. When you finish, he says quietly: "The Lord sees you, Elder. Every door. Every rejection. It counts." You leave the office lighter.',
+          effects: { spirit: 4, obedience: 1 },
+          rapportEffect: 1,
+        },
+        resultBad: {
+          text: 'He listens, nods, and quotes a scripture you\'ve heard a hundred times. It doesn\'t land today. But he means well.',
+          effects: { spirit: 1 },
+        },
+        successChance: 0.6,
+        statCheck: 'spirit',
+      },
+      {
+        label: 'Say everything\'s great',
+        resultGood: {
+          text: '"Jó, jó." He smiles and gives you a candy from a drawer. "Keep up the good work, Elderek." Quick and painless.',
+          effects: { spirit: 1 },
+        },
+        resultBad: {
+          text: 'He sees right through it. "Elder... I was a missionary too." An awkward silence. He lets you leave, but you feel the missed connection.',
+          effects: { spirit: -1 },
+        },
+        successChance: 0.4,
+      },
+    ],
+  },
+  {
+    id: 'bishop_referral',
+    title: 'The Bishop Has a Name',
+    description: 'The branch president slides a piece of paper across the desk. "My neighbor. Szabó Péter. He lost his wife last year. He\'s been asking questions." He taps the paper. "I think he\'s ready."',
+    choices: [
+      {
+        label: 'Promise to visit this week',
+        resultGood: {
+          text: '"Köszönöm, Elnök." You pocket the note. A warm lead from a trusted member — these are gold. The branch president beams.',
+          effects: { spirit: 3, skills: 1 },
+        },
+        resultBad: {
+          text: 'You take the note but the week slips away. The branch president asks about it next Sunday. Guilt is a powerful motivator.',
+          effects: { spirit: -1, skills: 1 },
+        },
+        successChance: 0.5,
+        statCheck: 'skills',
+      },
+      {
+        label: 'Ask for more details first',
+        resultGood: {
+          text: 'He tells you everything — Péter\'s background, his questions, the best time to visit. You leave prepared. This is how it should work.',
+          effects: { spirit: 2, skills: 2, language: 1 },
+        },
+        resultBad: {
+          text: 'He frowns slightly. "Just go visit him, Elder. Don\'t overthink it." Fair enough.',
+          effects: { skills: 1 },
+        },
+        successChance: 0.6,
+      },
+    ],
+  },
+  {
+    id: 'bishop_ward_council',
+    title: 'Ward Coordination',
+    description: 'The branch president pulls out a battered notebook. "We need to talk about the Farkas family. They haven\'t been in three months. And Balogh testvér — he\'s struggling with his testimony. I need your help."',
+    choices: [
+      {
+        label: 'Offer to visit both families',
+        resultGood: {
+          text: '"Nagyon köszönöm." His eyes are bright. "The missionaries who care about the members — those are the ones who change this branch." He shakes your hand firmly.',
+          effects: { spirit: 3, obedience: 2 },
+          rapportEffect: 1,
+        },
+        resultBad: {
+          text: 'You commit, but between teaching investigators and language study, the visits feel rushed. Half-measures. The branch president notices.',
+          effects: { spirit: 1, obedience: 1 },
+        },
+        successChance: 0.5,
+        statCheck: 'skills',
+      },
+      {
+        label: 'Focus on your investigators instead',
+        resultGood: {
+          text: '"I understand, Elder. Investigators first." He nods. "But don\'t forget — retention is just as important as conversion." Wise words.',
+          effects: { skills: 1 },
+        },
+        resultBad: {
+          text: 'He\'s quiet for a moment. "The members ARE the church, Elder. Without them, what are the investigators joining?" It stings because it\'s true.',
+          effects: { spirit: -2, skills: 1 },
+          rapportEffect: -1,
+        },
+        successChance: 0.4,
+      },
+    ],
+  },
+]

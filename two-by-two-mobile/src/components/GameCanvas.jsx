@@ -278,7 +278,9 @@ export default function GameCanvas({ activeSlot, onInteraction }) {
       if (map.npcSpawns) {
         for (const npc of map.npcSpawns) {
           const npcType = npc.type === 'investigator' ? 'investigator'
-            : npc.type === 'shopper' ? 'npc_female' : 'npc_male'
+            : npc.type === 'shopper' ? 'npc_female'
+            : npc.type === 'member' ? 'npc_female'
+            : 'npc_male'
           renderCharacter(ctx, camera, npc.x, npc.y, 'down', npcType, 0)
         }
       }

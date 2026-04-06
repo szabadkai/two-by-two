@@ -1,14 +1,24 @@
 /**
  * Map Enhancer
- * Dynamically injects NPCs (investigators, etc.) into static map definitions
+ * Dynamically injects NPCs (investigators, members) into static map definitions
  * based on current game state.
  */
 
-const CHURCH_PEW_SEATS = [
-  { x: 3, y: 2 },
-  { x: 3, y: 3 },
-  { x: 3, y: 4 },
-  { x: 5, y: 4 },
+import { MEMBERS } from '../data/members'
+
+// Chapel seats — each has a walkable neighbor via the center aisle (x=3) or side aisles
+const CHURCH_INVESTIGATOR_SEATS = [
+  { x: 2, y: 2 },  // left pew row 1 — aisle at (3,2)
+  { x: 4, y: 2 },  // right pew row 1 — aisle at (3,2)
+  { x: 2, y: 3 },  // left pew row 2 — aisle at (3,3)
+  { x: 4, y: 3 },  // right pew row 2 — aisle at (3,3)
+]
+
+// Classroom / back seats for ward members
+const CHURCH_MEMBER_SEATS = [
+  { x: 9, y: 2 },   // classroom chair row 1
+  { x: 11, y: 2 },  // classroom chair row 1
+  { x: 2, y: 4 },   // left pew row 3 — aisle at (3,4)
 ]
 
 const STREET_SIDEWALK_POSITIONS = [
@@ -27,17 +37,27 @@ export function getEnhancedMap(mapDef, investigators) {
 
   if (mapDef.id === 'church') {
     const investigatorSpawns = activeInvestigators
-      .slice(0, CHURCH_PEW_SEATS.length)
+      .slice(0, CHURCH_INVESTIGATOR_SEATS.length)
       .map((inv, i) => ({
-        ...CHURCH_PEW_SEATS[i],
+        ...CHURCH_INVESTIGATOR_SEATS[i],
         type: 'investigator',
         name: inv.name,
         investigatorId: inv.id,
       }))
 
+    // Place up to 3 ward members in remaining seats
+    const memberSpawns = MEMBERS
+      .slice(0, CHURCH_MEMBER_SEATS.length)
+      .map((m, i) => ({
+        ...CHURCH_MEMBER_SEATS[i],
+        type: 'member',
+        name: m.name,
+        memberId: m.id,
+      }))
+
     return {
       ...mapDef,
-      npcSpawns: [...(mapDef.npcSpawns || []), ...investigatorSpawns],
+      npcSpawns: [...(mapDef.npcSpawns || []), ...investigatorSpawns, ...memberSpawns],
     }
   }
 

@@ -52,12 +52,27 @@ export default function DailyView() {
   }, [pendingMinigame, setMinigameScore])
 
   // Handle interaction from GameCanvas (player tapped on an activity in the map)
+  const triggerBishopEvent = useGameStore((s) => s.triggerBishopEvent)
+  const triggerMemberChat = useGameStore((s) => s.triggerMemberChat)
+
   const handleMapInteraction = useCallback((interaction) => {
     if (!interaction) return
 
     // Tram stop → start tracting flow
     if (interaction.type === 'tram') {
       startTracting(activeSlot)
+      return
+    }
+
+    // Bishop's office → trigger bishop dialogue event
+    if (interaction.type === 'bishop') {
+      triggerBishopEvent()
+      return
+    }
+
+    // Ward member → small fellowship chat (no slot cost)
+    if (interaction.type === 'member') {
+      triggerMemberChat(interaction.memberId)
       return
     }
 
@@ -86,7 +101,7 @@ export default function DailyView() {
     // Auto-advance to next empty slot
     const next = TIME_SLOTS.find((s) => s !== activeSlot && !schedule[s] && !isSlotLocked(s))
     if (next) setActiveSlot(next)
-  }, [activeSlot, schedule, investigators, setActivity, setMinigameScore, setVisitTarget, startTracting])
+  }, [activeSlot, schedule, investigators, setActivity, setMinigameScore, setVisitTarget, startTracting, triggerBishopEvent, triggerMemberChat])
 
   const handlePickInvestigator = (invId, activityId) => {
     setVisitTarget(invId)

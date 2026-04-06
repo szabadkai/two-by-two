@@ -6,6 +6,7 @@ import { MEMBERS } from '../data/members'
 import { FAMILY, LEADERSHIP } from '../data/family'
 import { resolveDay } from '../engine/resolveDay'
 import { resolveEvent as resolveEventEngine } from '../engine/resolveEvent'
+import { BISHOP_EVENTS } from '../data/events'
 import { advanceInvestigator, weeklyInvestigatorDecay, resolveObjection } from '../engine/investigatorEngine'
 import { checkNewInvestigator, resetNamePool } from '../engine/investigatorGenerator'
 import { clampRapport } from '../engine/companionEngine'
@@ -297,6 +298,29 @@ export const useGameStore = create((set, get) => ({
     }))
 
     get().advanceDay()
+  },
+
+  // Bishop office interaction → pick random bishop event and show event modal
+  triggerBishopEvent: () => {
+    const state = get()
+    if (state.pendingEvent) return // already showing an event
+    const pool = BISHOP_EVENTS.filter((e) => !state.eventLog.some((l) => l.event === e.title && l.week === state.week))
+    const event = pool.length > 0
+      ? pool[Math.floor(Math.random() * pool.length)]
+      : BISHOP_EVENTS[Math.floor(Math.random() * BISHOP_EVENTS.length)]
+    set({ pendingEvent: event })
+  },
+
+  // Ward member fellowship chat → small immediate spirit boost (no slot cost)
+  triggerMemberChat: (memberId) => {
+    const member = MEMBERS.find((m) => m.id === memberId)
+    if (!member) return
+    const quote = member.callQuotes[Math.floor(Math.random() * member.callQuotes.length)]
+    const spiritGain = member.callEffects?.spirit || 1
+    set((s) => ({
+      stats: { ...s.stats, spirit: Math.min(100, s.stats.spirit + spiritGain) },
+    }))
+    get().addToast(`${member.name}: ${quote}  (spirit +${spiritGain})`, 'good')
   },
 
   advanceDay: () => {
