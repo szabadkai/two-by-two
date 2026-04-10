@@ -1,8 +1,11 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useGameStore } from '../store/gameStore'
 import { DAY_NAMES, DAY_NAMES_EN, TIME_SLOTS, TIME_SLOT_LABELS } from '../data/constants'
 import { ACTIVITIES } from '../data/activities'
 import { ACTIVITY_MINIGAME_MAP } from '../engine/minigameEngine'
+import { getCompanionDialogue } from '../data/companionDialogue'
+import { getCompanionMood } from '../engine/companionEngine'
+import { pickVignette } from '../data/vignettes'
 import StatRow from '../components/StatRow'
 import CompanionBanner from '../components/CompanionBanner'
 import MinigameLauncher from '../components/MinigameLauncher'
@@ -26,10 +29,19 @@ export default function DailyView() {
   const minigameScores = useGameStore((s) => s.minigameScores)
   const setMinigameScore = useGameStore((s) => s.setMinigameScore)
   const startTracting = useGameStore((s) => s.startTracting)
+  const companion = useGameStore((s) => s.companion)
+  const addToast = useGameStore((s) => s.addToast)
 
   const [activeSlot, setActiveSlot] = useState('morning')
   const [pendingMinigame, setPendingMinigame] = useState(null)
   const [showInvestigatorPicker, setShowInvestigatorPicker] = useState(false)
+  const [vignetteText, setVignetteText] = useState(null)
+
+  // Pick a new vignette whenever the day/week changes
+  useEffect(() => {
+    const state = useGameStore.getState()
+    setVignetteText(pickVignette(state))
+  }, [day, week])
 
   const isSlotLocked = (slot) => {
     return mandatoryActivity && mandatoryActivity.slot === slot && mandatoryActivity.accepted
@@ -91,6 +103,13 @@ export default function DailyView() {
 
     setActivity(activeSlot, activityId)
 
+    // Companion comments on the activity
+    if (companion) {
+      const mood = getCompanionMood(companion.rapport)
+      const line = getCompanionDialogue(companion, activityId, mood)
+      if (line) addToast(`${companion.name}: "${line}"`, 'info')
+    }
+
     const hasMinigame = ACTIVITY_MINIGAME_MAP[activityId]
     if (hasMinigame) {
       setPendingMinigame({ slot: activeSlot, activityId })
@@ -101,7 +120,7 @@ export default function DailyView() {
     // Auto-advance to next empty slot
     const next = TIME_SLOTS.find((s) => s !== activeSlot && !schedule[s] && !isSlotLocked(s))
     if (next) setActiveSlot(next)
-  }, [activeSlot, schedule, investigators, setActivity, setMinigameScore, setVisitTarget, startTracting, triggerBishopEvent, triggerMemberChat])
+  }, [activeSlot, schedule, investigators, companion, setActivity, setMinigameScore, setVisitTarget, startTracting, triggerBishopEvent, triggerMemberChat, addToast])
 
   const handlePickInvestigator = (invId, activityId) => {
     setVisitTarget(invId)
@@ -132,6 +151,13 @@ export default function DailyView() {
 
       {/* Stats */}
       <StatRow />
+
+      {/* Day-start vignette */}
+      {vignetteText && (
+        <div className="vignette-banner" onClick={() => setVignetteText(null)}>
+          <span className="vignette-text">{vignetteText}</span>
+        </div>
+      )}
 
       {/* Time slot tabs */}
       <div className="slot-tabs">

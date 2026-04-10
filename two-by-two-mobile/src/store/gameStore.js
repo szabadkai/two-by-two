@@ -9,7 +9,7 @@ import { resolveEvent as resolveEventEngine } from '../engine/resolveEvent'
 import { BISHOP_EVENTS } from '../data/events'
 import { advanceInvestigator, weeklyInvestigatorDecay, resolveObjection } from '../engine/investigatorEngine'
 import { checkNewInvestigator, resetNamePool } from '../engine/investigatorGenerator'
-import { clampRapport } from '../engine/companionEngine'
+import { clampRapport, getCompanionRapportDecay } from '../engine/companionEngine'
 import {
   checkCompanionReport,
   checkBudgetDebt,
@@ -407,6 +407,13 @@ export const useGameStore = create((set, get) => ({
       notifications.push(`WARNING ${warnings}/3`)
     }
 
+    // Weekly companion rapport decay (archetype-dependent)
+    const rapportDecay = getCompanionRapportDecay(state.companion)
+    const decayedRapport = clampRapport(state.companion.rapport - rapportDecay)
+    if (rapportDecay > 0 && decayedRapport < state.companion.rapport) {
+      notifications.push(`Companion rapport drifted (${state.companion.archetype}).`)
+    }
+
     let stipendBudget = newBudget
     if (state.week % 4 === 0) {
       stipendBudget += MONTHLY_STIPEND
@@ -431,6 +438,7 @@ export const useGameStore = create((set, get) => ({
     const updatedState = {
       day: 0,
       week: nextWeek,
+      companion: { ...state.companion, rapport: decayedRapport },
       investigators: decayedInvestigators,
       laundryWeeksSkipped,
       warnings,

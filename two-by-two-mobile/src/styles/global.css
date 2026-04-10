@@ -620,6 +620,23 @@ body {
 .toast.good { border-color: var(--success); }
 .toast.bad { border-color: var(--danger); }
 
+/* ── Day-start vignette ── */
+.vignette-banner {
+  padding: var(--space-sm) var(--space-md);
+  background: var(--bg-card);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+  margin: 0 var(--space-md);
+  animation: slideDown 0.4s var(--ease-spring);
+}
+
+.vignette-text {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-style: italic;
+  line-height: 1.4;
+}
+
 /* ── Day result deltas ── */
 .delta-list {
   display: flex;

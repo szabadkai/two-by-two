@@ -46,8 +46,11 @@ export const MONTHLY_STIPEND = 45000
 
 // --- Difficulty & Consequences ---
 
-// Daily spirit drain (homesickness)
-export const DAILY_SPIRIT_DRAIN = 3
+// Daily spirit drain (homesickness) — base value, modified by companion rapport
+export const DAILY_SPIRIT_DRAIN = 2
+
+// Rapport above this threshold reduces spirit drain by 1
+export const RAPPORT_SPIRIT_RELIEF_THRESHOLD = 7
 
 // Language decay per week if no language activity was done
 export const LANGUAGE_DECAY_PER_WEEK = 1

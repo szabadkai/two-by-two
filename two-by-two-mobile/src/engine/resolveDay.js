@@ -9,6 +9,7 @@ import {
   ON_FIRE_MULTIPLIER,
   RAPPORT_EFFECT_SCALE,
   DAILY_SPIRIT_DRAIN,
+  RAPPORT_SPIRIT_RELIEF_THRESHOLD,
 } from '../data/constants'
 import { checkSpiritCrisis } from './consequenceEngine'
 import { scaleEffects, ACTIVITY_MINIGAME_MAP } from './minigameEngine'
@@ -144,9 +145,14 @@ export function resolveDay(state, isPDay = false) {
     }
   }
 
-  // Daily spirit drain (homesickness, fatigue) — aggressive now
+  // Daily spirit drain (homesickness, fatigue)
+  // Reduced by 1 when companion rapport is high (good companionship = less lonely)
   if (!isPDay) {
-    statDeltas.spirit = (statDeltas.spirit || 0) - DAILY_SPIRIT_DRAIN
+    let spiritDrain = DAILY_SPIRIT_DRAIN
+    if (companion.rapport >= RAPPORT_SPIRIT_RELIEF_THRESHOLD) {
+      spiritDrain = Math.max(1, spiritDrain - 1)
+    }
+    statDeltas.spirit = (statDeltas.spirit || 0) - spiritDrain
   }
 
   // Apply companion archetype stat modifiers (boost or penalty to gains)
