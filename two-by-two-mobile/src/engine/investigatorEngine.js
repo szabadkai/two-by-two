@@ -100,12 +100,41 @@ export function resolveObjection(investigator, effect) {
   }
 }
 
+/**
+ * Personality-based warmth decay multipliers.
+ * Seekers and Goldens are patient; Skeptics and Rebels lose interest fast.
+ */
+const PERSONALITY_WARMTH_DECAY = {
+  'The Seeker': 0.5,
+  'The Skeptic': 2,
+  'The Lonely': 0.5,
+  'English Student': 1,
+  'The Rebel': 1.5,
+  'The Referral': 0.5,
+  'The Intellectual': 1.5,
+  'The Golden': 0,
+}
+
+/**
+ * Warmth floor by stage — advanced investigators don't go to 0 easily.
+ * Stage 3+ investigators have already committed enough to not vanish overnight.
+ */
+function getWarmthFloor(stage) {
+  if (stage >= 5) return 3
+  if (stage >= 3) return 2
+  return 0
+}
+
 export function weeklyInvestigatorDecay(investigators) {
   const notifications = []
   const updated = investigators.map((inv) => {
     if (!inv.isActive || inv.stage >= 7) return inv
 
-    const newWarmth = inv.warmth - WARMTH_DECAY_PER_WEEK
+    const personalityRate = PERSONALITY_WARMTH_DECAY[inv.personality] ?? 1
+    const decay = Math.round(WARMTH_DECAY_PER_WEEK * personalityRate)
+    const floor = getWarmthFloor(inv.stage)
+    const newWarmth = Math.max(floor, inv.warmth - decay)
+
     if (newWarmth <= 0) {
       notifications.push(`${inv.name} has gone silent. They stopped answering the door.`)
       return { ...inv, warmth: 0, isActive: false }

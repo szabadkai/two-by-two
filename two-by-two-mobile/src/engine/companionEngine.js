@@ -24,6 +24,28 @@ export function getCompanionStatModifier(companion, stat) {
 }
 
 /**
+ * Apply diminishing returns to rapport gains.
+ * Above rapport 7, gains are halved. At 9+, gains are reduced to 1/3.
+ */
+export function applyRapportDiminishing(currentRapport, rawGain) {
+  if (rawGain <= 0) return rawGain
+  if (currentRapport >= 9) return Math.max(1, Math.round(rawGain * 0.33))
+  if (currentRapport >= 7) return Math.max(1, Math.round(rawGain * 0.5))
+  return rawGain
+}
+
+/**
+ * Check if companion likes/dislikes a given activity.
+ * Returns a rapport modifier: +1 for liked, -1 for disliked, 0 for neutral.
+ */
+export function getActivityPreferenceBonus(companion, activityId) {
+  if (!companion.likedActivities && !companion.dislikedActivities) return 0
+  if (companion.likedActivities?.includes(activityId)) return 1
+  if (companion.dislikedActivities?.includes(activityId)) return -1
+  return 0
+}
+
+/**
  * Apply companion-specific rapport decay (used in weekly processing).
  * Some companions decay faster, some slower.
  */

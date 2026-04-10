@@ -1,6 +1,10 @@
 import {
   MAX_WARNINGS,
   SPIRIT_CRISIS_THRESHOLD,
+  OBEDIENCE_TIER_EXEMPLARY,
+  OBEDIENCE_TIER_COMFORTABLE,
+  OBEDIENCE_TIER_WARNING,
+  OBEDIENCE_TIER_DANGER,
   COMPANION_REPORT_OBEDIENCE_THRESHOLD,
   COMPANION_REPORT_RAPPORT_THRESHOLD,
   COMPANION_REPORT_CHANCE,
@@ -71,6 +75,76 @@ export function checkCompanionReport(stats, companion) {
       obediencePenalty: OBEDIENCE_REPORT_PENALTY,
       text: `${companion.name} reported your behavior to the Zone Leader. You've received an official warning.`,
     }
+  }
+  return null
+}
+
+/**
+ * Evaluate weekly obedience tier and return consequences/rewards.
+ * Returns null if nothing noteworthy, or an object with text + effects.
+ */
+export function checkObedienceTier(stats) {
+  const ob = stats.obedience
+
+  // Exemplary (90+): chance of special blessing
+  if (ob >= OBEDIENCE_TIER_EXEMPLARY) {
+    if (Math.random() < 0.25) {
+      const blessings = [
+        { text: 'The mission president praised your dedication in zone conference. Your example lifts everyone.', effects: { spirit: 3 } },
+        { text: 'A member tells you they were inspired by your obedience. "You remind me why I joined the church."', effects: { spirit: 4 } },
+        { text: 'An investigator who had been cold suddenly reaches out — they felt something different about you.', effects: { spirit: 2 } },
+        { text: 'District Leader calls: "President wants you to train the new missionaries. He trusts you."', effects: { spirit: 2, skills: 2 } },
+      ]
+      return blessings[Math.floor(Math.random() * blessings.length)]
+    }
+    return null
+  }
+
+  // Comfortable (60-89): safe, occasional mild reminders
+  if (ob >= OBEDIENCE_TIER_COMFORTABLE) {
+    if (Math.random() < 0.1) {
+      const prods = [
+        { text: 'Zone Leader mentions your area in the weekly call. "Keep it tight, Elders."', effects: {} },
+        { text: 'Companion gives you a look when you sleep past 6:30. Nothing said, but noted.', effects: {} },
+      ]
+      return prods[Math.floor(Math.random() * prods.length)]
+    }
+    return null
+  }
+
+  // Warning zone (40-59): zone leader scrutiny
+  if (ob >= OBEDIENCE_TIER_WARNING) {
+    if (Math.random() < 0.3) {
+      const warnings = [
+        { text: 'Zone Leader calls: "I need your daily planner by tonight. Something feels off in your area."', effects: { spirit: -2 } },
+        { text: 'A surprise check-in from the Assistants. They ask pointed questions about your schedule.', effects: { spirit: -1, obedience: 1 } },
+        { text: 'Your district leader pulls you aside after meeting. "I\'m worried about you, Elder. Talk to me."', effects: { spirit: -1 } },
+      ]
+      return warnings[Math.floor(Math.random() * warnings.length)]
+    }
+    return null
+  }
+
+  // Danger zone (20-39): companion reports, restrictions
+  if (ob >= OBEDIENCE_TIER_DANGER) {
+    if (Math.random() < 0.5) {
+      const consequences = [
+        { text: 'Zone Leader restricts your area. No more "exploring" — scheduled visits only until further notice.', effects: { spirit: -3, obedience: 2 } },
+        { text: 'Mission president schedules a phone interview. His voice is calm but concerned. "Tell me what\'s happening, Elder."', effects: { spirit: -2, obedience: 3 } },
+        { text: 'Your companion refuses to go along with the plan. "I\'m not losing my mission because of you."', effects: { spirit: -2 }, rapportEffect: -2 },
+      ]
+      return consequences[Math.floor(Math.random() * consequences.length)]
+    }
+    return null
+  }
+
+  // Critical (<20): transfer threat
+  if (Math.random() < 0.7) {
+    const critical = [
+      { text: 'Emergency call from the mission president. "Elder, I need to see you in my office. This week." This is serious.', effects: { spirit: -5, obedience: 5 }, warning: true },
+      { text: 'Your companion called the Assistants. They\'re sending the Zone Leaders to "help" your area. Everyone knows what that means.', effects: { spirit: -4, obedience: 3 }, rapportEffect: -3, warning: true },
+    ]
+    return critical[Math.floor(Math.random() * critical.length)]
   }
   return null
 }

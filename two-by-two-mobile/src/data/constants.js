@@ -32,7 +32,7 @@ export const TIME_SLOT_LABELS = { morning: 'Morning', afternoon: 'Afternoon', ev
 
 export const EVENT_CHANCE = 0.3
 export const INVESTIGATOR_BASE_PROGRESSION = 0.3
-export const WARMTH_DECAY_PER_WEEK = 2
+export const WARMTH_DECAY_PER_WEEK = 1
 export const RAPPORT_EFFECT_SCALE = 0.1
 
 export const TRUNKY_THRESHOLD = 30
@@ -62,6 +62,12 @@ export const WEEKLY_TRANSIT_COST = 2000
 // Warnings & failure
 export const MAX_WARNINGS = 3
 export const SPIRIT_CRISIS_THRESHOLD = 0
+// Obedience tiers (gradient system)
+export const OBEDIENCE_TIER_EXEMPLARY = 90      // Unlock miracles / special callings
+export const OBEDIENCE_TIER_COMFORTABLE = 60    // Safe zone, occasional mild prods
+export const OBEDIENCE_TIER_WARNING = 40        // Zone leader check-ins, scrutiny
+export const OBEDIENCE_TIER_DANGER = 20         // Companion reports, transfer threat
+
 export const COMPANION_REPORT_OBEDIENCE_THRESHOLD = 40
 export const COMPANION_REPORT_RAPPORT_THRESHOLD = 4
 export const COMPANION_REPORT_CHANCE = 0.3

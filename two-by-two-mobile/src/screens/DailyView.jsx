@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react'
 import { useGameStore } from '../store/gameStore'
 import { DAY_NAMES, DAY_NAMES_EN, TIME_SLOTS, TIME_SLOT_LABELS } from '../data/constants'
-import { ACTIVITIES } from '../data/activities'
+import { ACTIVITIES, getActivityDescription } from '../data/activities'
 import { ACTIVITY_MINIGAME_MAP } from '../engine/minigameEngine'
 import { getCompanionDialogue } from '../data/companionDialogue'
 import { getCompanionMood } from '../engine/companionEngine'
@@ -102,6 +102,13 @@ export default function DailyView() {
     }
 
     setActivity(activeSlot, activityId)
+
+    // Show activity flavor text
+    const activityData = ACTIVITIES[activityId]
+    if (activityData) {
+      const desc = getActivityDescription(activityData)
+      addToast(desc, 'flavor')
+    }
 
     // Companion comments on the activity
     if (companion) {

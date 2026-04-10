@@ -13,6 +13,8 @@ export const COMPANIONS = [
     statModifiers: { language: 0, spirit: 0, skills: 0, obedience: 0.1 },
     rapportDecayRate: 1, // normal
     walkSpeed: 1, // normal
+    likedActivities: ['personal_study', 'companion_study'],
+    dislikedActivities: ['street_contact', 'tracting'],
     description: 'Fresh from Provo, UT. Memorized every discussion in English but panics when Hungarians talk to him. Brought three jars of peanut butter.',
     weekRange: [1, 24], // when they might appear
     quotes: {
@@ -48,6 +50,8 @@ export const COMPANIONS = [
     statModifiers: { language: 0.15, spirit: 0.1, skills: 0, obedience: 0 },
     rapportDecayRate: 0.5, // slow — patient and understanding
     walkSpeed: 1,
+    likedActivities: ['personal_study', 'teach_lesson', 'member_visit'],
+    dislikedActivities: ['buy_peanut_butter'],
     description: 'Hungarian-American convert of 3 years. Speaks decent Hungarian from his grandparents. Quietly intense about the work. Cries during every testimony meeting.',
     weekRange: [1, 104],
     quotes: {
@@ -83,6 +87,8 @@ export const COMPANIONS = [
     statModifiers: { language: 0, spirit: -0.1, skills: 0.15, obedience: -0.1 },
     rapportDecayRate: 2, // fast — hard to keep happy
     walkSpeed: 0.8, // drags feet
+    likedActivities: ['explore_city', 'sports', 'buy_food'],
+    dislikedActivities: ['personal_study', 'tracting', 'companion_study'],
     description: 'Has 3 months left and a girlfriend waiting in Rexburg. Knows every shortcut, every rule worth bending. Incredible teacher when he bothers to try.',
     weekRange: [52, 104],
     quotes: {
@@ -118,6 +124,8 @@ export const COMPANIONS = [
     statModifiers: { language: 0, spirit: 0, skills: 0.1, obedience: 0.2 },
     rapportDecayRate: 1.5, // demands a lot
     walkSpeed: 1.2, // power walker
+    likedActivities: ['companion_study', 'teach_lesson', 'personal_study'],
+    dislikedActivities: ['explore_city', 'sports'],
     description: 'Zone Leader material. Wakes up at 5:30 for extra study. Irons his shirts with military precision. Will report you if you break rules. Also genuinely cares.',
     weekRange: [12, 90],
     quotes: {
@@ -153,6 +161,8 @@ export const COMPANIONS = [
     statModifiers: { language: 0, spirit: 0.05, skills: -0.1, obedience: -0.15 },
     rapportDecayRate: 0.5, // easy going, rapport is stable
     walkSpeed: 1,
+    likedActivities: ['sports', 'explore_city', 'companion_activity'],
+    dislikedActivities: ['study_language', 'personal_study'],
     description: 'Smuggled a Game Boy in his luggage. Can quote Monty Python in Hungarian. Terrible at tracting but somehow every investigator loves him. The fun companion.',
     weekRange: [1, 104],
     quotes: {
@@ -188,6 +198,8 @@ export const COMPANIONS = [
     statModifiers: { language: 0, spirit: 0.2, skills: 0.05, obedience: 0.15 },
     rapportDecayRate: 1,
     walkSpeed: 1,
+    likedActivities: ['personal_study', 'teach_lesson', 'service_project'],
+    dislikedActivities: ['explore_city', 'sports'],
     description: 'Seminary graduate, Eagle Scout, bishop\'s son. Has never questioned anything in his life. Prays before every meal, after every meal, and during every meal. Scarily sincere.',
     weekRange: [1, 104],
     quotes: {
@@ -223,6 +235,8 @@ export const COMPANIONS = [
     statModifiers: { language: 0, spirit: -0.15, skills: 0, obedience: 0 },
     rapportDecayRate: 1.5, // needs constant attention
     walkSpeed: 0.9,
+    likedActivities: ['companion_study', 'companion_activity', 'letters_home'],
+    dislikedActivities: ['street_contact', 'tracting'],
     description: 'Left home at 18 from a small town in Idaho. Cries at least once a week. Desperately wants to be a good missionary but the homesickness is crushing. Needs a friend more than a trainer.',
     weekRange: [1, 60],
     quotes: {

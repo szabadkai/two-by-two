@@ -17,6 +17,7 @@ import {
   applyWeeklyExpenses,
   applyLanguageDecay,
   rollMandatoryActivity,
+  checkObedienceTier,
 } from '../engine/consequenceEngine'
 import { isTransferWeek } from '../engine/transferEngine'
 import { saveToLocalStorage, loadFromLocalStorage } from '../utils/saveLoad'
@@ -405,6 +406,24 @@ export const useGameStore = create((set, get) => ({
       warnings += 1
       notifications.push(reportResult.text)
       notifications.push(`WARNING ${warnings}/3`)
+    }
+
+    // Obedience tier consequences/rewards
+    const obedienceResult = checkObedienceTier(state.stats)
+    if (obedienceResult) {
+      notifications.push(obedienceResult.text)
+      if (obedienceResult.effects) {
+        for (const [stat, delta] of Object.entries(obedienceResult.effects)) {
+          state.stats[stat] = Math.max(0, Math.min(100, (state.stats[stat] || 0) + delta))
+        }
+      }
+      if (obedienceResult.rapportEffect) {
+        state.companion.rapport = Math.max(0, Math.min(10, state.companion.rapport + obedienceResult.rapportEffect))
+      }
+      if (obedienceResult.warning) {
+        warnings += 1
+        notifications.push(`WARNING ${warnings}/3`)
+      }
     }
 
     // Weekly companion rapport decay (archetype-dependent)

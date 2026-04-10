@@ -13,7 +13,7 @@ import {
 } from '../data/constants'
 import { checkSpiritCrisis } from './consequenceEngine'
 import { scaleEffects, ACTIVITY_MINIGAME_MAP } from './minigameEngine'
-import { getCompanionStatModifier } from './companionEngine'
+import { getCompanionStatModifier, applyRapportDiminishing, getActivityPreferenceBonus } from './companionEngine'
 
 export function rollInRange(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min
@@ -107,6 +107,9 @@ export function resolveDay(state, isPDay = false) {
 
       rapportDelta += scaled.rapportDelta || 0
 
+      // Companion activity preference
+      rapportDelta += getActivityPreferenceBonus(companion, activityId)
+
       if (scaled.special) {
         specialResults.push(scaled.special)
       }
@@ -138,6 +141,9 @@ export function resolveDay(state, isPDay = false) {
         const [rMin, rMax] = activity.rapportEffect
         rapportDelta += rollInRange(rMin, rMax)
       }
+
+      // Companion activity preference
+      rapportDelta += getActivityPreferenceBonus(companion, activityId)
 
       if (activity.special) {
         specialResults.push(activity.special)
@@ -171,8 +177,9 @@ export function resolveDay(state, isPDay = false) {
     newStats[stat] = clampStat(stat, stats[stat] + delta)
   }
 
-  // Calculate new rapport
-  const newRapport = Math.max(0, Math.min(10, companion.rapport + rapportDelta))
+  // Calculate new rapport (with diminishing returns at high rapport)
+  const adjustedRapportDelta = applyRapportDiminishing(companion.rapport, rapportDelta)
+  const newRapport = Math.max(0, Math.min(10, companion.rapport + adjustedRapportDelta))
 
   // Check for spirit crisis FIRST — forced event takes priority
   const crisisEvent = checkSpiritCrisis(newStats)
